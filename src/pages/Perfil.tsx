@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { LogOut, Share2, Trophy } from 'lucide-react'
+import { Check, Copy, LogOut, Share2, Trophy } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
@@ -8,6 +9,7 @@ import { ProgresoBar } from '@/components/ui/ProgresoBar'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion, useResumen } from '@/hooks/useColeccion'
 import { useAmigos } from '@/hooks/useAmigos'
+import { CompartirPerfil } from '@/components/perfil/CompartirPerfil'
 
 export function PerfilPage() {
   const { user, perfil, cerrarSesion } = useAuth()
@@ -15,20 +17,17 @@ export function PerfilPage() {
   const { coleccion } = useColeccion(user?.uid)
   const resumen = useResumen(coleccion, estampas)
   const { perfiles } = useAmigos(user?.uid)
+  const [abrirCompartir, setAbrirCompartir] = useState(false)
+  const [copiado, setCopiado] = useState(false)
 
-  const compartir = async () => {
-    if (!perfil) return
-    const url = `${window.location.origin}/amigo/${perfil.username}`
-    const texto = `Mi album del Mundial 2026 va al ${resumen.porcentaje}%! Buscame como @${perfil.username}`
+  const copiarUsername = async () => {
+    if (!perfil?.username) return
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Mi album Mundial', text: texto, url })
-      } else {
-        await navigator.clipboard.writeText(`${texto} ${url}`)
-        alert('Enlace copiado al portapapeles')
-      }
+      await navigator.clipboard.writeText(`@${perfil.username}`)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 1600)
     } catch {
-      // cancelado
+      // sin permiso
     }
   }
 
@@ -64,7 +63,7 @@ export function PerfilPage() {
         </div>
       </motion.div>
 
-      <Card className="!p-3">
+      <Card className="!p-3 space-y-2">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-trofeo-300/15 border border-trofeo-300/30 p-2 text-trofeo-300">
             <Trophy className="h-5 w-5" />
@@ -72,11 +71,28 @@ export function PerfilPage() {
           <div className="flex-1 min-w-0">
             <p className="text-xs uppercase tracking-wider text-crema/60">Comparte tu @</p>
             <p className="text-sm text-crema">
-              Pidele a tus amigos que te busquen como{' '}
+              Que te busquen como{' '}
               <span className="text-trofeo-300 font-bold">@{perfil?.username}</span>
             </p>
           </div>
-          <Button tamano="sm" variante="secundario" iconoIzq={<Share2 className="h-4 w-4" />} onClick={compartir}>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            tamano="sm"
+            variante="secundario"
+            iconoIzq={copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            onClick={copiarUsername}
+            disabled={!perfil?.username}
+          >
+            {copiado ? 'Copiado' : 'Copiar @'}
+          </Button>
+          <Button
+            tamano="sm"
+            variante="trofeo"
+            iconoIzq={<Share2 className="h-4 w-4" />}
+            onClick={() => setAbrirCompartir(true)}
+            disabled={!perfil?.username}
+          >
             Compartir
           </Button>
         </div>
@@ -99,6 +115,16 @@ export function PerfilPage() {
       <p className="text-center text-[11px] text-crema/40">
         App de fans, no afiliada a FIFA o Panini.
       </p>
+
+      {perfil && (
+        <CompartirPerfil
+          abierto={abrirCompartir}
+          onCerrar={() => setAbrirCompartir(false)}
+          username={perfil.username}
+          displayName={perfil.displayName}
+          porcentaje={resumen.porcentaje}
+        />
+      )}
     </div>
   )
 }

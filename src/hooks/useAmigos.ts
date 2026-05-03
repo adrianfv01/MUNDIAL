@@ -180,17 +180,9 @@ export function useAccionesAmistad(uidActual: string | undefined, perfilActual: 
     [uidActual],
   )
 
-  const rechazar = useCallback(
-    async (idSol: string) => {
-      const ref = doc(db, 'solicitudesAmistad', idSol)
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref)
-        if (!snap.exists()) return
-        tx.update(ref, { estado: 'rechazada' })
-      })
-    },
-    [],
-  )
+  const rechazar = useCallback(async (idSol: string) => {
+    await deleteDoc(doc(db, 'solicitudesAmistad', idSol))
+  }, [])
 
   const eliminarAmigo = useCallback(async (otroUid: string) => {
     if (!uidActual) return
@@ -208,11 +200,11 @@ async function aceptarSolicitud(uidActual: string, idSol: string, otroUid: strin
     if (!snap.exists()) return
     const data = snap.data()
     if (data.para !== uidActual) throw new Error('No tienes permiso para aceptar')
-    tx.update(refSol, { estado: 'aceptada' })
     const [a, b] = uidActual < otroUid ? [uidActual, otroUid] : [otroUid, uidActual]
     tx.set(refAmistad, {
       usuarios: [a, b],
       createdAt: serverTimestamp(),
     })
+    tx.delete(refSol)
   })
 }

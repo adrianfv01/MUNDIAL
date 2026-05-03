@@ -36,8 +36,11 @@ export function EquipoCard({ equipo, pegadas, total, to }: EquipoCardProps) {
           <img
             src={`https://flagcdn.com/${equipo.bandera.toLowerCase()}.svg`}
             alt={equipo.nombre}
-            className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow"
+            width={48}
+            height={48}
             loading="lazy"
+            decoding="async"
+            className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow"
           />
           <div className="min-w-0 flex-1">
             <p className="titulo-display text-base text-crema leading-none truncate">

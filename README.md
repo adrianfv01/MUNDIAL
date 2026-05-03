@@ -5,7 +5,7 @@ PWA hecha con React + Vite + TypeScript + Tailwind y Firebase para llevar el reg
 ## Caracteristicas
 
 - Registro tap-to-pegar (toca para sumar, manten presionado para restar) con badge de repetidas.
-- Catalogo precargado: 48 equipos y ~990 estampas (escudos, planteles, jugadores, especiales FWC).
+- Catalogo oficial Panini: 48 equipos y 980 estampas (escudos, planteles, 18 jugadores reales por seleccion y especiales FWC del Museo FIFA).
 - Sistema de amigos con solicitudes mutuas y busqueda por @username.
 - Matcher de intercambios: cruza tus repetidas con las que les faltan a tus amigos y prioriza los matches dobles.
 - Estetica mundialista: paleta verde campo / dorado trofeo / rojo / celeste 2026 con tipografia display.
@@ -93,7 +93,10 @@ Descarga la cuenta de servicio en **Configuracion del proyecto > Cuentas de serv
 npm run seed
 ```
 
-Esto subira los 48 equipos y las ~990 estampas a Firestore.
+Esto subira los 48 equipos y las 980 estampas a Firestore. El seed sincroniza:
+agrega/actualiza los documentos del catalogo actual y borra los antiguos que
+ya no estan en el listado oficial (por ejemplo equipos provisionales que no
+clasificaron al Mundial).
 
 ## Desarrollo
 
@@ -132,7 +135,16 @@ npm run deploy       # build + firebase deploy
 
 ## Notas sobre el catalogo
 
-El album oficial Panini Mundial 2026 se publicara cerca del torneo. El seed actual usa la estructura conocida (48 equipos, escudo + plantel + 18 jugadores con posicion, mas 30 estampas especiales FWC). Cuando salga el listado oficial, edita `src/data/equipos.ts` y `src/data/catalogoSeed.ts` (o las definiciones especiales) y vuelve a correr `npm run seed`.
+El catalogo esta sincronizado con el album oficial Panini FIFA World Cup 2026
+(lanzado el 29 de abril de 2026): 48 selecciones agrupadas en 12 grupos (A-L)
+con 20 estampas por equipo (escudo foil, 11 jugadores, foto de plantel, 7
+jugadores) y 20 especiales: el sticker 00 del logo Panini (foil), FWC1-FWC8
+(emblema oficial, mascotas, eslogan, balon y sedes de Canada, Mexico y EE.UU.)
+y FWC9-FWC19 del Museo FIFA con los campeones historicos.
+
+Si Panini publica una actualizacion (por ejemplo tras una convocatoria final),
+edita `src/data/equipos.ts` y `src/data/catalogoSeed.ts` y vuelve a correr
+`npm run seed`. El seed se encargara de sincronizar Firestore.
 
 ## Roadmap sugerido
 

@@ -41,6 +41,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
+        navigateFallbackDenylist: [/^\/__\//],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin === 'https://firestore.googleapis.com',
@@ -49,6 +50,16 @@ export default defineConfig({
               cacheName: 'firestore-cache',
               networkTimeoutSeconds: 5,
               expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+          {
+            urlPattern: ({ url }) =>
+              url.origin === 'https://flagcdn.com' ||
+              url.origin === 'https://api.qrserver.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'recursos-externos',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {
@@ -77,6 +88,29 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('firebase')) return 'vendor-firebase'
+          if (id.includes('framer-motion')) return 'vendor-motion'
+          if (id.includes('lucide-react')) return 'vendor-icons'
+          if (id.includes('react-router')) return 'vendor-router'
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('scheduler')
+          ) {
+            return 'vendor-react'
+          }
+        },
+      },
     },
   },
 })

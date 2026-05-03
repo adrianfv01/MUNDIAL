@@ -22,6 +22,10 @@ export interface Estampa {
   posicion?: string
   foil?: boolean
   orden: number
+  // Ruta absoluta (recomendada: /img/estampas/<id>.webp) o URL externa
+  // de la foto real de la estampa. Si no esta definida o falla la carga,
+  // se usa el placeholder visual (bandera o estrella).
+  imagen?: string
 }
 
 export interface PerfilUsuario {

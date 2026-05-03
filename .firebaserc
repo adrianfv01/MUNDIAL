@@ -2,6 +2,17 @@
   "projects": {
     "default": "mundial-album-2026"
   },
-  "targets": {},
+  "targets": {
+    "mundial-album-2026": {
+      "hosting": {
+        "principal": [
+          "albummundial2026"
+        ],
+        "legacy": [
+          "mundial-album-2026"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

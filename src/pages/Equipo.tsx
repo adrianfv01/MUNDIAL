@@ -99,6 +99,10 @@ export function EquipoPage() {
             <img
               src={`https://flagcdn.com/${equipo!.bandera.toLowerCase()}.svg`}
               alt={equipo!.nombre}
+              width={48}
+              height={48}
+              loading="lazy"
+              decoding="async"
               className="h-12 w-12 rounded-full object-cover border-2 border-white/40 shadow"
             />
           )}
@@ -143,7 +147,7 @@ export function EquipoPage() {
       {visibles.length === 0 ? (
         <p className="text-center text-crema/50 py-10">No hay estampas para mostrar</p>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
           {visibles.map((e) => (
             <StickerCard
               key={e.id}
@@ -160,7 +164,7 @@ export function EquipoPage() {
       )}
 
       <p className="text-center text-[11px] text-crema/40 pt-4">
-        Toca para sumar · Manten presionado para restar
+        Toca la estampa para sumar. Usa los botones &minus; / &plus; para ajustar repes.
       </p>
     </div>
   )
