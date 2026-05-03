@@ -65,7 +65,7 @@ export function MiAlbumPage() {
             <Trophy className="h-6 w-6" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-crema/60">Mi album</p>
+            <p className="text-xs uppercase tracking-wider text-crema/60">Mi álbum</p>
             <h1 className="titulo-display text-3xl">Mundial 2026</h1>
           </div>
         </div>

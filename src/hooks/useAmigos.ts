@@ -146,7 +146,7 @@ export async function buscarPorUsername(username: string): Promise<PerfilUsuario
 export function useAccionesAmistad(uidActual: string | undefined, perfilActual: PerfilUsuario | null) {
   const enviarSolicitud = useCallback(
     async (destino: PerfilUsuario) => {
-      if (!uidActual || !perfilActual) throw new Error('No hay sesion')
+      if (!uidActual || !perfilActual) throw new Error('No hay sesión')
       if (destino.uid === uidActual) throw new Error('No puedes agregarte a ti mismo')
 
       const ref = doc(db, 'solicitudesAmistad', idSolicitud(uidActual, destino.uid))
@@ -158,7 +158,6 @@ export function useAccionesAmistad(uidActual: string | undefined, perfilActual: 
 
       const inversa = await getDoc(refInversa)
       if (inversa.exists() && (inversa.data().estado === 'pendiente')) {
-        // Si ya nos envio una, aceptamos
         await aceptarSolicitud(uidActual, refInversa.id, destino.uid)
         return
       }
@@ -186,7 +185,7 @@ export function useAccionesAmistad(uidActual: string | undefined, perfilActual: 
 
   const aceptar = useCallback(
     async (idSol: string, otroUid: string) => {
-      if (!uidActual) throw new Error('No hay sesion')
+      if (!uidActual) throw new Error('No hay sesión')
       await aceptarSolicitud(uidActual, idSol, otroUid)
     },
     [uidActual],

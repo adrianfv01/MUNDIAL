@@ -44,7 +44,7 @@ export function CrearUsernamePage() {
             Elige tu <span className="text-trofeo-300">nombre</span>
           </h1>
           <p className="mt-2 text-sm text-crema/70">
-            Hola {user?.displayName || user?.email}, este sera tu nombre publico para
+            Hola {user?.displayName || user?.email}, este será tu nombre público para
             que tus amigos te encuentren e intercambien estampas contigo.
           </p>
         </div>
@@ -60,7 +60,7 @@ export function CrearUsernamePage() {
               autoCapitalize="none"
               autoCorrect="off"
               autoComplete="off"
-              ayuda="Solo minusculas, numeros y guion bajo. Entre 3 y 20 caracteres."
+              ayuda="Solo minúsculas, números y guion bajo. Entre 3 y 20 caracteres."
               error={error}
               required
             />
@@ -69,14 +69,14 @@ export function CrearUsernamePage() {
               <span>{valor ? `@${valor.toLowerCase()}` : '@tu_usuario'}</span>
             </div>
             <Button type="submit" ancho tamano="lg" variante="trofeo" cargando={cargando}>
-              Continuar al album
+              Continuar al álbum
             </Button>
             <button
               type="button"
               onClick={cerrarSesion}
               className="block w-full text-center text-xs text-crema/50 hover:text-crema/80 mt-2"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </form>
         </Card>

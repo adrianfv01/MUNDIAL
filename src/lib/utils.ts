@@ -24,10 +24,10 @@ export function idSolicitud(de: string, para: string): string {
 
 export function validarUsername(value: string): string | null {
   if (!value) return 'Ingresa un nombre de usuario'
-  if (value.length < 3) return 'Minimo 3 caracteres'
-  if (value.length > 20) return 'Maximo 20 caracteres'
+  if (value.length < 3) return 'Mínimo 3 caracteres'
+  if (value.length > 20) return 'Máximo 20 caracteres'
   if (!/^[a-z0-9_]+$/.test(value)) {
-    return 'Solo minusculas, numeros y guion bajo'
+    return 'Solo minúsculas, números y guion bajo'
   }
   return null
 }

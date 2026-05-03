@@ -40,11 +40,11 @@ export function LoginPage() {
       } else {
         await recuperarContrasena(email)
         setMensajeOk(
-          'Te enviamos un correo con el enlace para restablecer tu contrasena. Revisa tu bandeja y la carpeta de spam.',
+          'Te enviamos un correo con el enlace para restablecer tu contraseña. Revisa tu bandeja y la carpeta de spam.',
         )
       }
     } catch (err) {
-      const m = err instanceof Error ? err.message : 'Ocurrio un error'
+      const m = err instanceof Error ? err.message : 'Ocurrió un error'
       setError(traducirError(m))
     } finally {
       setCargando(false)
@@ -58,7 +58,7 @@ export function LoginPage() {
     try {
       await loginGoogle()
     } catch (err) {
-      const m = err instanceof Error ? err.message : 'Ocurrio un error'
+      const m = err instanceof Error ? err.message : 'Ocurrió un error'
       setError(traducirError(m))
     } finally {
       setCargando(false)
@@ -77,7 +77,7 @@ export function LoginPage() {
             <Trophy className="h-10 w-10" strokeWidth={2.5} />
           </div>
           <h1 className="titulo-display mt-5 text-5xl text-crema">
-            Mi Album <span className="text-trofeo-300">Mundial</span>
+            Mi Álbum <span className="text-trofeo-300">Mundial</span>
           </h1>
           <p className="mt-2 text-sm text-crema/70">
             Lleva el registro de tus estampas e intercambia con tus amigos
@@ -116,7 +116,7 @@ export function LoginPage() {
                         : 'text-crema/70 hover:text-crema'
                     }`}
                   >
-                    {m === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}
+                    {m === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
                   </button>
                 ))}
               </div>
@@ -131,11 +131,11 @@ export function LoginPage() {
                 className="inline-flex items-center gap-1 text-xs text-crema/70 hover:text-trofeo-300 tap-target"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Volver a iniciar sesion
+                Volver a iniciar sesión
               </button>
-              <h2 className="text-lg font-bold text-crema">Recuperar contrasena</h2>
+              <h2 className="text-lg font-bold text-crema">Recuperar contraseña</h2>
               <p className="text-sm text-crema/60">
-                Escribe el correo con el que te registraste y te enviaremos un enlace para crear una nueva contrasena.
+                Escribe el correo con el que te registraste y te enviaremos un enlace para crear una nueva contraseña.
               </p>
             </div>
           )}
@@ -147,7 +147,7 @@ export function LoginPage() {
                 name="nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Como apareceras"
+                placeholder="Cómo aparecerás"
                 required
               />
             )}
@@ -164,13 +164,13 @@ export function LoginPage() {
             {modo !== 'recuperar' && (
               <>
                 <Input
-                  etiqueta="Contrasena"
+                  etiqueta="Contraseña"
                   name="password"
                   type="password"
                   autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimo 6 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                   required
                   minLength={6}
                 />
@@ -181,7 +181,7 @@ export function LoginPage() {
                       onClick={() => cambiarModo('recuperar')}
                       className="text-xs text-crema/70 hover:text-trofeo-300 tap-target"
                     >
-                      Olvide mi contrasena
+                      Olvidé mi contraseña
                     </button>
                   </div>
                 )}
@@ -219,7 +219,7 @@ export function LoginPage() {
                 ? 'Entrar'
                 : modo === 'registro'
                   ? 'Crear cuenta'
-                  : 'Enviar enlace de recuperacion'}
+                  : 'Enviar enlace de recuperación'}
             </Button>
           </form>
         </Card>
@@ -230,7 +230,7 @@ export function LoginPage() {
         </p>
         <p className="mt-2 text-center text-xs text-crema/40">
           <Link to="/" className="hover:text-trofeo-300">
-            Mundial 2026 - USA / Canada / Mexico
+            Mundial 2026 - USA / Canadá / México
           </Link>
         </p>
       </motion.div>
@@ -252,14 +252,14 @@ function LogoGoogle() {
 function traducirError(msg: string): string {
   if (msg.includes('user-not-found')) return 'No existe una cuenta con ese correo'
   if (msg.includes('wrong-password') || msg.includes('invalid-credential'))
-    return 'Correo o contrasena incorrectos'
-  if (msg.includes('email-already-in-use')) return 'Ese correo ya esta registrado'
-  if (msg.includes('weak-password')) return 'Contrasena demasiado debil'
-  if (msg.includes('invalid-email')) return 'Correo invalido'
+    return 'Correo o contraseña incorrectos'
+  if (msg.includes('email-already-in-use')) return 'Ese correo ya está registrado'
+  if (msg.includes('weak-password')) return 'Contraseña demasiado débil'
+  if (msg.includes('invalid-email')) return 'Correo inválido'
   if (msg.includes('missing-email')) return 'Ingresa tu correo'
   if (msg.includes('too-many-requests'))
     return 'Demasiados intentos. Espera unos minutos antes de volver a intentarlo.'
   if (msg.includes('popup-closed-by-user')) return 'Cerraste la ventana de Google'
-  if (msg.includes('network')) return 'Sin conexion a internet'
-  return msg.replace('Firebase: ', '').replace(/\(auth\/[^)]+\)\.?/g, '').trim() || 'Ocurrio un error'
+  if (msg.includes('network')) return 'Sin conexión a internet'
+  return msg.replace('Firebase: ', '').replace(/\(auth\/[^)]+\)\.?/g, '').trim() || 'Ocurrió un error'
 }

@@ -8,8 +8,8 @@ import { MiAlbumPage } from '@/pages/MiAlbum'
 type Cargador<T> = () => Promise<{ default: T }>
 
 /**
- * Envuelve un import dinamico para que reintente una vez y, si vuelve a fallar
- * (tipico tras un deploy nuevo donde los hashes de chunks ya no existen), fuerce
+ * Envuelve un import dinámico para que reintente una vez y, si vuelve a fallar
+ * (típico tras un deploy nuevo donde los hashes de chunks ya no existen), fuerce
  * un reload completo. Sin esto el Suspense se queda colgado para siempre.
  */
 function lazyResiliente<T extends ComponentType<unknown>>(cargador: Cargador<T>) {
@@ -55,9 +55,9 @@ const PerfilPage = lazyResiliente(cargarPerfil)
 
 let yaPrecargo = false
 /**
- * Precarga en segundo plano los chunks de las paginas principales para que al
- * navegar desde el bottom nav ya esten listos. En celulares con red lenta esto
- * elimina el spinner largo al cambiar de seccion.
+ * Precarga en segundo plano los chunks de las páginas principales para que al
+ * navegar desde el bottom nav ya estén listos. En celulares con red lenta esto
+ * elimina el spinner largo al cambiar de sección.
  */
 export function precargarRutasPrincipales() {
   if (yaPrecargo) return
@@ -72,7 +72,7 @@ export function precargarRutasPrincipales() {
   const ejecutar = () => {
     for (const c of cargas) {
       c().catch(() => {
-        // si falla, el lazyResiliente se hara cargo cuando el user navegue
+        // si falla, el lazyResiliente se hará cargo cuando el user navegue
       })
     }
   }
@@ -94,7 +94,7 @@ export function RutasApp() {
   const { user, perfil, cargando, necesitaUsername } = useAuth()
 
   if (cargando) {
-    return <PantallaCargando mensaje="Cargando tu album..." />
+    return <PantallaCargando mensaje="Cargando tu álbum..." />
   }
 
   if (!user) {

@@ -28,7 +28,7 @@ export function CompartirPerfil({
   )
   const texto = useMemo(
     () =>
-      `Mi album del Mundial 2026 va al ${porcentaje}%. Buscame como @${username} para intercambiar estampas.`,
+      `Mi álbum del Mundial 2026 va al ${porcentaje}%. Búscame como @${username} para intercambiar estampas.`,
     [username, porcentaje],
   )
   const textoCompleto = `${texto} ${url}`
@@ -52,7 +52,7 @@ export function CompartirPerfil({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: displayName ? `Album de ${displayName}` : 'Mi album Mundial 2026',
+          title: displayName ? `Álbum de ${displayName}` : 'Mi álbum Mundial 2026',
           text: texto,
           url,
         })
@@ -72,7 +72,7 @@ export function CompartirPerfil({
   }
 
   return (
-    <Modal abierto={abierto} onCerrar={cerrar} titulo="Compartir tu album">
+    <Modal abierto={abierto} onCerrar={cerrar} titulo="Compartir tu álbum">
       <div className="space-y-4">
         <div className="rounded-2xl border border-trofeo-300/30 bg-gradient-to-br from-campo-700/40 to-carbon p-4">
           <p className="text-[11px] uppercase tracking-wider text-crema/60">Tu nombre de usuario</p>

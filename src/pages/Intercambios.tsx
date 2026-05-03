@@ -158,7 +158,7 @@ export function IntercambiosPage() {
       ) : perfiles.length === 0 ? (
         <EstadoVacio
           icono={<ArrowLeftRight className="h-6 w-6" />}
-          titulo="Aun no tienes amigos"
+          titulo="Aún no tienes amigos"
           descripcion="Agrega coleccionistas para descubrir intercambios."
           accion={
             <Link
@@ -172,8 +172,8 @@ export function IntercambiosPage() {
       ) : matches.length === 0 ? (
         <EstadoVacio
           icono={<Trophy className="h-6 w-6" />}
-          titulo="Aun no hay matches"
-          descripcion="Cuando tu o tus amigos tengan estampas repetidas que se complementen, apareceran aqui."
+          titulo="Aún no hay matches"
+          descripcion="Cuando tú o tus amigos tengan estampas repetidas que se complementen, aparecerán aquí."
         />
       ) : (
         <>
@@ -191,7 +191,7 @@ export function IntercambiosPage() {
             <EstadoVacio
               icono={<Search className="h-5 w-5" />}
               titulo="Sin resultados"
-              descripcion="Prueba quitar el filtro o cambiar la busqueda."
+              descripcion="Prueba quitar el filtro o cambiar la búsqueda."
             />
           ) : (
             <div className="space-y-3">
@@ -510,9 +510,9 @@ function PreviewBanderas({
 
   return (
     <div className="px-3 sm:px-4 pb-3 flex items-center gap-2 text-xs">
-      <FilaBanderas etiqueta="Tu" banderas={tuyas} acento="campo" total={tuOfreces.length} />
+      <FilaBanderas etiqueta="Tú" banderas={tuyas} acento="campo" total={tuOfreces.length} />
       <span className="text-crema/30">/</span>
-      <FilaBanderas etiqueta="El" banderas={suyas} acento="trofeo" total={elOfrece.length} />
+      <FilaBanderas etiqueta="Él" banderas={suyas} acento="trofeo" total={elOfrece.length} />
     </div>
   )
 }
@@ -581,7 +581,7 @@ function ContenidoExpandido({
 
   const generarMensaje = () => {
     const lineas: string[] = []
-    lineas.push(`Hola @${match.amigoUsername}, te propongo un intercambio del album Mundial 26.`)
+    lineas.push(`Hola @${match.amigoUsername}, te propongo un intercambio del álbum Mundial 26.`)
     lineas.push('')
     if (match.tuOfreces.length > 0) {
       lineas.push('Te puedo dar:')
@@ -590,18 +590,18 @@ function ContenidoExpandido({
         lineas.push(`- #${e.numero} ${e.nombre}${eq ? ` (${eq.nombre})` : ''}`)
       }
       if (match.tuOfreces.length > 25) {
-        lineas.push(`...y ${match.tuOfreces.length - 25} mas.`)
+        lineas.push(`...y ${match.tuOfreces.length - 25} más.`)
       }
       lineas.push('')
     }
     if (match.elOfrece.length > 0) {
-      lineas.push('Y te pediria:')
+      lineas.push('Y te pediría:')
       for (const e of match.elOfrece.slice(0, 25)) {
         const eq = equiposPorCodigo[e.equipoId]
         lineas.push(`- #${e.numero} ${e.nombre}${eq ? ` (${eq.nombre})` : ''}`)
       }
       if (match.elOfrece.length > 25) {
-        lineas.push(`...y ${match.elOfrece.length - 25} mas.`)
+        lineas.push(`...y ${match.elOfrece.length - 25} más.`)
       }
     }
     return lineas.join('\n')
@@ -635,13 +635,13 @@ function ContenidoExpandido({
         <BotonVista
           activa={vista === 'doy'}
           onClick={() => setVista('doy')}
-          etiqueta={`Tu das (${match.tuOfreces.length})`}
+          etiqueta={`Tú das (${match.tuOfreces.length})`}
           acento="campo"
         />
         <BotonVista
           activa={vista === 'pido'}
           onClick={() => setVista('pido')}
-          etiqueta={`El te da (${match.elOfrece.length})`}
+          etiqueta={`Él te da (${match.elOfrece.length})`}
           acento="trofeo"
         />
       </div>
@@ -654,7 +654,7 @@ function ContenidoExpandido({
           estampas={match.tuOfreces}
           equiposPorCodigo={equiposPorCodigo}
           acento="campo"
-          vacioMsg="No tienes repetidas que el necesite. Sigue pegando estampas."
+          vacioMsg="No tienes repetidas que él necesite. Sigue pegando estampas."
         />
       )}
       {vista === 'pido' && (
@@ -687,7 +687,7 @@ function ContenidoExpandido({
           to={`/amigo/${match.amigoUsername}`}
           className="ml-auto inline-flex items-center justify-center h-10 px-3 rounded-xl text-xs font-bold uppercase tracking-wider text-trofeo-300 hover:text-trofeo-200 tap-target"
         >
-          Ver album
+          Ver álbum
         </Link>
       </div>
     </div>
@@ -741,7 +741,7 @@ function PanelPares({
   if (total === 0) {
     return (
       <p className="text-sm text-crema/55 text-center py-4">
-        No hay pares posibles todavia. Revisa &quot;tu das&quot; o &quot;el te da&quot;.
+        No hay pares posibles todavía. Revisa &quot;tú das&quot; o &quot;él te da&quot;.
       </p>
     )
   }
@@ -749,9 +749,9 @@ function PanelPares({
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-1 text-[10px] uppercase tracking-wider">
-        <span className="text-campo-200 font-bold truncate">Tu entregas</span>
+        <span className="text-campo-200 font-bold truncate">Tú entregas</span>
         <span className="text-crema/30">por</span>
-        <span className="text-trofeo-200 font-bold text-right truncate">El entrega</span>
+        <span className="text-trofeo-200 font-bold text-right truncate">Él entrega</span>
       </div>
       <div className="space-y-1.5">
         {pares.map(({ mia, suya }, idx) => {
@@ -790,8 +790,8 @@ function PanelPares({
       {(match.tuOfreces.length > total || match.elOfrece.length > total) && (
         <p className="text-[11px] text-crema/55 text-center pt-2">
           Hay {Math.abs(match.tuOfreces.length - match.elOfrece.length)} extra
-          {match.tuOfreces.length > match.elOfrece.length ? ' que tu puedes ofrecer' : ' que el puede ofrecer'}.
-          Revisa las pestanas para verlas.
+          {match.tuOfreces.length > match.elOfrece.length ? ' que tú puedes ofrecer' : ' que él puede ofrecer'}.
+          Revisa las pestañas para verlas.
         </p>
       )}
     </div>

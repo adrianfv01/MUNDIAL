@@ -127,7 +127,7 @@ export function PerfilAmigoPage() {
     return (
       <EstadoVacio
         titulo="No se pudo cargar"
-        descripcion={error + '. Asegurate de que sean amigos.'}
+        descripcion={error + '. Asegúrate de que sean amigos.'}
       />
     )
   }
@@ -168,7 +168,7 @@ export function PerfilAmigoPage() {
           <ProgresoBar
             valor={resumen.pegadas}
             total={resumen.total}
-            etiqueta="Avance del album"
+            etiqueta="Avance del álbum"
             acento="celeste"
           />
         </div>
@@ -218,7 +218,7 @@ export function PerfilAmigoPage() {
       )}
 
       <section>
-        <h2 className="titulo-display text-lg mb-2 px-1">Su album</h2>
+        <h2 className="titulo-display text-lg mb-2 px-1">Su álbum</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {equipos.map((eq) => {
             const data = porEquipo[eq.codigo] ?? { total: 0, pegadas: 0 }
@@ -275,7 +275,7 @@ export function PerfilAmigoPage() {
             </div>
             <p className="text-sm text-crema/80">
               ¿Seguro que quieres quitar a <span className="font-bold">@{amigo.username}</span> de tus amigos?
-              Dejaras de ver su album e intercambios. Si cambias de opinion tendras que enviarle una nueva solicitud.
+              Dejarás de ver su álbum e intercambios. Si cambias de opinión tendrás que enviarle una nueva solicitud.
             </p>
             {errorQuitar && (
               <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-lg p-3">

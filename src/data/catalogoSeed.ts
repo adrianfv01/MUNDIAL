@@ -9,7 +9,7 @@ function asignarImagen(estampa: Estampa): Estampa {
 
 export const ESTAMPAS_POR_EQUIPO = 20
 
-// Plantilla oficial Panini Mundial 2026: 18 jugadores por seleccion en el orden
+// Plantilla oficial Panini Mundial 2026: 18 jugadores por selección en el orden
 // #2-#12 y #14-#20 (el #1 es el escudo y el #13 es la foto del plantel).
 const NOMBRES_POR_EQUIPO: Record<string, string[]> = {
   ALG: [
@@ -259,7 +259,7 @@ function nombreEstampaPorIndice(equipoNombre: string, indice: number, codigoEqui
   if (indice === 13) return `Plantel ${equipoNombre}`
   const jugadores = NOMBRES_POR_EQUIPO[codigoEquipo]
   if (!jugadores) return `Jugador ${indice}`
-  // posiciones 2-12 -> indices 0-10 ; posiciones 14-20 -> indices 11-17
+  // posiciones 2-12 -> índices 0-10; posiciones 14-20 -> índices 11-17
   const idxJugador = indice <= 12 ? indice - 2 : indice - 3
   return jugadores[idxJugador] ?? `Jugador ${indice}`
 }
@@ -292,17 +292,17 @@ export function generarEstampasEquipo(codigo: string, nombre: string): Estampa[]
   return lista
 }
 
-// Estampas especiales (FWC) del album oficial Panini Mundial 2026.
-// Total: 20 (Panini Logo + FWC1-FWC8 introduccion + FWC9-FWC19 FIFA Museum).
+// Estampas especiales (FWC) del álbum oficial Panini Mundial 2026.
+// Total: 20 (Panini Logo + FWC1-FWC8 introducción + FWC9-FWC19 FIFA Museum).
 const ESPECIALES_DEFINICION: Array<{ id: string; nombre: string; foil?: boolean }> = [
   { id: '00', nombre: 'Logo Panini', foil: true },
   { id: 'FWC1', nombre: 'Emblema oficial Mundial 2026', foil: true },
   { id: 'FWC2', nombre: 'Emblema oficial Mundial 2026', foil: true },
   { id: 'FWC3', nombre: 'Mascotas oficiales (Maple, Zayu, Clutch)', foil: true },
   { id: 'FWC4', nombre: 'Eslogan oficial', foil: true },
-  { id: 'FWC5', nombre: 'Balon oficial', foil: true },
-  { id: 'FWC6', nombre: 'Canada - Sedes', foil: true },
-  { id: 'FWC7', nombre: 'Mexico - Sedes', foil: true },
+  { id: 'FWC5', nombre: 'Balón oficial', foil: true },
+  { id: 'FWC6', nombre: 'Canadá - Sedes', foil: true },
+  { id: 'FWC7', nombre: 'México - Sedes', foil: true },
   { id: 'FWC8', nombre: 'Estados Unidos - Sedes', foil: true },
   { id: 'FWC9', nombre: 'Italia 1934 - Museo FIFA', foil: true },
   { id: 'FWC10', nombre: 'Uruguay 1950 - Museo FIFA', foil: true },

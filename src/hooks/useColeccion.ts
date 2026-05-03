@@ -13,7 +13,7 @@ import { db } from '@/lib/firebase'
 import type { Coleccion, Estampa, ResumenColeccion } from '@/lib/types'
 
 // Tiempo durante el cual confiamos en el valor optimista local
-// aunque Firestore aun no haya devuelto el snapshot actualizado.
+// aunque Firestore aún no haya devuelto el snapshot actualizado.
 const VENTANA_OPTIMISTA_MS = 4000
 
 interface ItemOptimista {

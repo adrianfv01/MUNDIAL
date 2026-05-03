@@ -103,7 +103,7 @@ export function AmigosPage() {
             ) : perfiles.length === 0 ? (
               <EstadoVacio
                 icono={<Users className="h-6 w-6" />}
-                titulo="Aun no tienes amigos"
+                titulo="Aún no tienes amigos"
                 descripcion="Busca a tus amigos por su nombre de usuario para comenzar a intercambiar."
                 accion={
                   <Button onClick={() => setTab('buscar')} variante="trofeo" iconoIzq={<Search className="h-4 w-4" />}>
@@ -123,7 +123,7 @@ export function AmigosPage() {
                     to={`/amigo/${p.username}`}
                     className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-xs uppercase tracking-wider font-bold tap-target"
                   >
-                    Ver album
+                    Ver álbum
                   </Link>
                   <button
                     type="button"
@@ -251,7 +251,7 @@ export function AmigosPage() {
             </div>
             <p className="text-sm text-crema/80">
               ¿Seguro que quieres quitar a <span className="font-bold">@{paraQuitar.username}</span> de tus amigos?
-              Dejaras de ver su album e intercambios. Si cambias de opinion tendras que enviarle una nueva solicitud.
+              Dejarás de ver su álbum e intercambios. Si cambias de opinión tendrás que enviarle una nueva solicitud.
             </p>
             {errorQuitar && (
               <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-lg p-3">
@@ -373,7 +373,7 @@ function BuscarAmigo({
             placeholder="goleador26"
             autoCapitalize="none"
             autoCorrect="off"
-            ayuda="Pidele a tu amigo su @username dentro de la app"
+            ayuda="Pídele a tu amigo su @username dentro de la app"
           />
           <Button
             type="submit"
@@ -398,7 +398,7 @@ function BuscarAmigo({
       )}
 
       {resultado === 'sin' && valor && !buscando && (
-        <p className="text-center text-sm text-crema/50">No se encontro ningun usuario con ese nombre.</p>
+        <p className="text-center text-sm text-crema/50">No se encontró ningún usuario con ese nombre.</p>
       )}
 
       {resultado && resultado !== 'sin' && (
@@ -409,7 +409,7 @@ function BuscarAmigo({
             <p className="text-xs text-crema/60">@{resultado.username}</p>
           </div>
           {resultado.uid === uid ? (
-            <Badge>Eres tu</Badge>
+            <Badge>Eres tú</Badge>
           ) : yaConectados.has(resultado.uid) ? (
             <Badge tono="campo">Ya conectado</Badge>
           ) : (

@@ -83,7 +83,7 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
     vibrar(12)
   }, [cantidad, empujarFeedback, onDecrementar, soloLectura])
 
-  // Mantener presionado un boton del stepper repite la accion (auto-repeat).
+  // Mantener presionado un botón del stepper repite la acción (auto-repeat).
   const detenerRepeticion = useCallback(() => {
     if (repeatTimerRef.current) {
       window.clearTimeout(repeatTimerRef.current)

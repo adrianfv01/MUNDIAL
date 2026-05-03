@@ -65,8 +65,8 @@ export function EquipoPage() {
     if (!visibleEnFiltro) setFiltro('todas')
   }, [estampaResaltada, estampas, coleccion, filtro])
 
-  // Hace scroll y dispara la animacion de resaltado una vez que la
-  // tarjeta de la estampa elegida esta montada en el DOM.
+  // Hace scroll y dispara la animación de resaltado una vez que la
+  // tarjeta de la estampa elegida está montada en el DOM.
   useEffect(() => {
     if (!estampaResaltada) return
     const el = refsEstampas.current.get(estampaResaltada)
@@ -78,7 +78,7 @@ export function EquipoPage() {
     const limpiar = window.setTimeout(() => {
       setDestacadaActiva(null)
       // Quitamos el query param para que el resaltado no se repita
-      // si el usuario interactua con la pagina.
+      // si el usuario interactúa con la página.
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -105,9 +105,9 @@ export function EquipoPage() {
   if (!equipo && !esEspeciales) {
     return (
       <div className="text-center py-20">
-        <p className="text-crema/60">No se encontro el equipo</p>
+        <p className="text-crema/60">No se encontró el equipo</p>
         <Link to="/" className="text-trofeo-300 underline mt-2 inline-block">
-          Volver al album
+          Volver al álbum
         </Link>
       </div>
     )

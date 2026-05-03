@@ -55,7 +55,7 @@ export function PerfilPage() {
       return
     }
     if (esCuentaPassword && !passwordEliminar) {
-      setErrorEliminar('Ingresa tu contrasena para confirmar')
+      setErrorEliminar('Ingresa tu contraseña para confirmar')
       setRequierePassword(true)
       return
     }
@@ -67,9 +67,9 @@ export function PerfilPage() {
       const code = (err as { code?: string }).code
       if (code === 'auth/password-required') {
         setRequierePassword(true)
-        setErrorEliminar('Necesitamos tu contrasena para confirmar')
+        setErrorEliminar('Necesitamos tu contraseña para confirmar')
       } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        setErrorEliminar('Contrasena incorrecta')
+        setErrorEliminar('Contraseña incorrecta')
       } else if (code === 'auth/popup-closed-by-user') {
         setErrorEliminar('Cerraste la ventana antes de confirmar')
       } else {
@@ -112,7 +112,7 @@ export function PerfilPage() {
           <ProgresoBar
             valor={resumen.pegadas}
             total={resumen.total}
-            etiqueta="Tu album"
+            etiqueta="Tu álbum"
             acento="trofeo"
             size="lg"
           />
@@ -169,7 +169,7 @@ export function PerfilPage() {
           onClick={cerrarSesion}
           iconoIzq={<LogOut className="h-4 w-4" />}
         >
-          Cerrar sesion
+          Cerrar sesión
         </Button>
       </Card>
 
@@ -182,7 +182,7 @@ export function PerfilPage() {
           Zona de peligro
         </p>
         <p className="text-xs text-crema/70">
-          Elimina tu cuenta y todos tus datos del album. Esta accion no se puede
+          Elimina tu cuenta y todos tus datos del álbum. Esta acción no se puede
           deshacer.
         </p>
         <Button
@@ -215,11 +215,11 @@ export function PerfilPage() {
           <div className="flex items-start gap-3 rounded-2xl bg-rojo/10 border border-rojo/40 p-3">
             <AlertTriangle className="h-5 w-5 text-rojo shrink-0 mt-0.5" />
             <div className="text-sm text-crema/90 space-y-1">
-              <p className="font-semibold">Esta accion es permanente.</p>
+              <p className="font-semibold">Esta acción es permanente.</p>
               <p className="text-crema/70 text-xs">
-                Se borraran tu album, repetidas, amigos, solicitudes y tu nombre
+                Se borrarán tu álbum, repetidas, amigos, solicitudes y tu nombre
                 de usuario <span className="text-trofeo-300">@{perfil?.username}</span>.
-                No podremos recuperar nada despues.
+                No podremos recuperar nada después.
               </p>
             </div>
           </div>
@@ -239,18 +239,18 @@ export function PerfilPage() {
 
           {esCuentaPassword && (
             <Input
-              etiqueta="Tu contrasena"
+              etiqueta="Tu contraseña"
               type="password"
               value={passwordEliminar}
               onChange={(e) => {
                 setPasswordEliminar(e.target.value)
                 if (errorEliminar) setErrorEliminar(null)
               }}
-              placeholder="Confirma tu contrasena"
+              placeholder="Confirma tu contraseña"
               autoComplete="current-password"
               ayuda={
                 requierePassword
-                  ? 'Necesitamos tu contrasena para confirmar la eliminacion.'
+                  ? 'Necesitamos tu contraseña para confirmar la eliminación.'
                   : undefined
               }
               disabled={eliminando}
@@ -259,7 +259,7 @@ export function PerfilPage() {
 
           {!esCuentaPassword && (
             <p className="text-xs text-crema/60">
-              Es posible que te pidamos volver a iniciar sesion con Google para
+              Es posible que te pidamos volver a iniciar sesión con Google para
               confirmar.
             </p>
           )}

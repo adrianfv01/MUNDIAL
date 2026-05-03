@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const asignarUsername = async (username: string) => {
-    if (!user) throw new Error('No hay sesion')
+    if (!user) throw new Error('No hay sesión')
     const usernameNorm = username.toLowerCase().trim()
     const refUsername = doc(db, 'usernames', usernameNorm)
     const refUsuario = doc(db, 'usuarios', user.uid)
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await runTransaction(db, async (tx) => {
       const snapUsername = await tx.get(refUsername)
       if (snapUsername.exists()) {
-        throw new Error('Ese nombre de usuario ya esta tomado')
+        throw new Error('Ese nombre de usuario ya está tomado')
       }
       const snapUsuario = await tx.get(refUsuario)
       const datosBase: Record<string, unknown> = {
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (provider === 'password') {
       if (!actual.email) throw new Error('La cuenta no tiene correo asociado')
       if (!password) {
-        const err = new Error('Necesitamos tu contrasena para confirmar')
+        const err = new Error('Necesitamos tu contraseña para confirmar')
         ;(err as Error & { code?: string }).code = 'auth/password-required'
         throw err
       }
@@ -219,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const eliminarCuenta = async (password?: string) => {
     const actual = auth.currentUser
-    if (!actual) throw new Error('No hay sesion activa')
+    if (!actual) throw new Error('No hay sesión activa')
     const uid = actual.uid
     const username = perfil?.username
 

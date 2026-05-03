@@ -10,7 +10,7 @@ const BuscarEstampas = lazy(() =>
 )
 
 const navItems = [
-  { to: '/', label: 'Album', Icon: BookMarked, end: true },
+  { to: '/', label: 'Álbum', Icon: BookMarked, end: true },
   { to: '/intercambios', label: 'Intercambios', Icon: Repeat2 },
   { to: '/amigos', label: 'Amigos', Icon: Users },
 ]
@@ -36,7 +36,7 @@ export function Header() {
           <Link
             to="/"
             className="flex items-center gap-2 tap-target shrink-0"
-            aria-label="Ir al album"
+            aria-label="Ir al álbum"
           >
             <span className="inline-flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-lg bg-gradient-to-br from-trofeo-300 to-trofeo-500 text-carbon shadow-foil">
               <Trophy className="h-5 w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
@@ -105,7 +105,7 @@ export function Header() {
           >
             <span className="hidden lg:flex flex-col items-end leading-tight">
               <span className="text-xs font-semibold text-crema/85">
-                {perfil?.displayName ?? user?.displayName ?? 'tu album'}
+                {perfil?.displayName ?? user?.displayName ?? 'tu álbum'}
               </span>
               <span className="text-[11px] text-trofeo-300/80 uppercase tracking-wider">
                 @{perfil?.username ?? '...'}

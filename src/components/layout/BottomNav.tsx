@@ -3,7 +3,7 @@ import { BookMarked, Repeat2, Users, UserCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
-  { to: '/', label: 'Album', Icon: BookMarked, end: true },
+  { to: '/', label: 'Álbum', Icon: BookMarked, end: true },
   { to: '/intercambios', label: 'Intercambios', Icon: Repeat2 },
   { to: '/amigos', label: 'Amigos', Icon: Users },
   { to: '/perfil', label: 'Perfil', Icon: UserCircle2 },

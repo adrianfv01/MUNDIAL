@@ -112,7 +112,7 @@ export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
             type="search"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
-            placeholder="Numero, jugador, equipo o pais"
+            placeholder="Número, jugador, equipo o país"
             autoCapitalize="none"
             autoCorrect="off"
             inputMode="search"
@@ -123,7 +123,7 @@ export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
               type="button"
               onClick={() => setValor('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/10 tap-target"
-              aria-label="Limpiar busqueda"
+              aria-label="Limpiar búsqueda"
             >
               <X className="h-4 w-4 text-crema/60" />
             </button>
@@ -150,11 +150,11 @@ export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
 
         {valor.length === 0 && filtro === 'todas' ? (
           <div className="text-center py-6 text-sm text-crema/50">
-            Escribe el numero, el nombre del jugador o el pais que buscas.
+            Escribe el número, el nombre del jugador o el país que buscas.
           </div>
         ) : visibles.length === 0 ? (
           <div className="text-center py-6 text-sm text-crema/50">
-            Sin coincidencias. Prueba con otro nombre o numero.
+            Sin coincidencias. Prueba con otro nombre o número.
           </div>
         ) : (
           <ul className="space-y-1.5 max-h-[55vh] overflow-y-auto -mx-1 px-1">
@@ -169,7 +169,7 @@ export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
             ))}
             {restantes > 0 && (
               <li className="text-center text-[11px] text-crema/40 py-2">
-                Refina tu busqueda para ver {restantes} resultados mas
+                Refina tu búsqueda para ver {restantes} resultados más
               </li>
             )}
           </ul>
