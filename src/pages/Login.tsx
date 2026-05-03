@@ -1,34 +1,47 @@
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { LogIn, Mail, Trophy, UserPlus } from 'lucide-react'
+import { ArrowLeft, KeyRound, LogIn, Mail, Trophy, UserPlus } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 
-type Modo = 'login' | 'registro'
+type Modo = 'login' | 'registro' | 'recuperar'
 
 export function LoginPage() {
-  const { user, loginGoogle, loginEmail, registroEmail } = useAuth()
+  const { user, loginGoogle, loginEmail, registroEmail, recuperarContrasena } = useAuth()
   const [modo, setModo] = useState<Modo>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nombre, setNombre] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [mensajeOk, setMensajeOk] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
 
   if (user) return <Navigate to="/" replace />
 
+  const cambiarModo = (nuevo: Modo) => {
+    setModo(nuevo)
+    setError(null)
+    setMensajeOk(null)
+  }
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setMensajeOk(null)
     setCargando(true)
     try {
       if (modo === 'login') {
         await loginEmail(email, password)
-      } else {
+      } else if (modo === 'registro') {
         await registroEmail(email, password, nombre)
+      } else {
+        await recuperarContrasena(email)
+        setMensajeOk(
+          'Te enviamos un correo con el enlace para restablecer tu contrasena. Revisa tu bandeja y la carpeta de spam.',
+        )
       }
     } catch (err) {
       const m = err instanceof Error ? err.message : 'Ocurrio un error'
@@ -40,6 +53,7 @@ export function LoginPage() {
 
   const onGoogle = async () => {
     setError(null)
+    setMensajeOk(null)
     setCargando(true)
     try {
       await loginGoogle()
@@ -71,39 +85,60 @@ export function LoginPage() {
         </div>
 
         <Card className="space-y-4">
-          <Button
-            ancho
-            tamano="lg"
-            variante="trofeo"
-            onClick={onGoogle}
-            cargando={cargando && modo === 'login' && !email}
-            iconoIzq={<LogoGoogle />}
-          >
-            Continuar con Google
-          </Button>
-
-          <div className="flex items-center gap-3">
-            <span className="h-px bg-white/15 flex-1" />
-            <span className="text-xs uppercase tracking-wider text-crema/40">o</span>
-            <span className="h-px bg-white/15 flex-1" />
-          </div>
-
-          <div className="flex rounded-xl bg-white/5 p-1 borde-trofeo">
-            {(['login', 'registro'] as Modo[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setModo(m)}
-                className={`flex-1 rounded-lg py-2 text-xs uppercase tracking-wider font-bold tap-target transition ${
-                  modo === m
-                    ? 'bg-trofeo-300 text-carbon'
-                    : 'text-crema/70 hover:text-crema'
-                }`}
+          {modo !== 'recuperar' && (
+            <>
+              <Button
+                ancho
+                tamano="lg"
+                variante="trofeo"
+                onClick={onGoogle}
+                cargando={cargando && modo === 'login' && !email}
+                iconoIzq={<LogoGoogle />}
               >
-                {m === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}
+                Continuar con Google
+              </Button>
+
+              <div className="flex items-center gap-3">
+                <span className="h-px bg-white/15 flex-1" />
+                <span className="text-xs uppercase tracking-wider text-crema/40">o</span>
+                <span className="h-px bg-white/15 flex-1" />
+              </div>
+
+              <div className="flex rounded-xl bg-white/5 p-1 borde-trofeo">
+                {(['login', 'registro'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => cambiarModo(m)}
+                    className={`flex-1 rounded-lg py-2 text-xs uppercase tracking-wider font-bold tap-target transition ${
+                      modo === m
+                        ? 'bg-trofeo-300 text-carbon'
+                        : 'text-crema/70 hover:text-crema'
+                    }`}
+                  >
+                    {m === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {modo === 'recuperar' && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => cambiarModo('login')}
+                className="inline-flex items-center gap-1 text-xs text-crema/70 hover:text-trofeo-300 tap-target"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Volver a iniciar sesion
               </button>
-            ))}
-          </div>
+              <h2 className="text-lg font-bold text-crema">Recuperar contrasena</h2>
+              <p className="text-sm text-crema/60">
+                Escribe el correo con el que te registraste y te enviaremos un enlace para crear una nueva contrasena.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-3">
             {modo === 'registro' && (
@@ -126,21 +161,42 @@ export function LoginPage() {
               placeholder="tu@correo.com"
               required
             />
-            <Input
-              etiqueta="Contrasena"
-              name="password"
-              type="password"
-              autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimo 6 caracteres"
-              required
-              minLength={6}
-            />
+            {modo !== 'recuperar' && (
+              <>
+                <Input
+                  etiqueta="Contrasena"
+                  name="password"
+                  type="password"
+                  autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimo 6 caracteres"
+                  required
+                  minLength={6}
+                />
+                {modo === 'login' && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => cambiarModo('recuperar')}
+                      className="text-xs text-crema/70 hover:text-trofeo-300 tap-target"
+                    >
+                      Olvide mi contrasena
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
 
             {error && (
               <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-lg p-2">
                 {error}
+              </p>
+            )}
+
+            {mensajeOk && (
+              <p className="text-sm text-trofeo-300 bg-trofeo-300/10 border border-trofeo-300/30 rounded-lg p-2">
+                {mensajeOk}
               </p>
             )}
 
@@ -149,9 +205,21 @@ export function LoginPage() {
               ancho
               tamano="lg"
               cargando={cargando}
-              iconoIzq={modo === 'login' ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              iconoIzq={
+                modo === 'login' ? (
+                  <LogIn className="h-4 w-4" />
+                ) : modo === 'registro' ? (
+                  <UserPlus className="h-4 w-4" />
+                ) : (
+                  <KeyRound className="h-4 w-4" />
+                )
+              }
             >
-              {modo === 'login' ? 'Entrar' : 'Crear cuenta'}
+              {modo === 'login'
+                ? 'Entrar'
+                : modo === 'registro'
+                  ? 'Crear cuenta'
+                  : 'Enviar enlace de recuperacion'}
             </Button>
           </form>
         </Card>
@@ -188,6 +256,9 @@ function traducirError(msg: string): string {
   if (msg.includes('email-already-in-use')) return 'Ese correo ya esta registrado'
   if (msg.includes('weak-password')) return 'Contrasena demasiado debil'
   if (msg.includes('invalid-email')) return 'Correo invalido'
+  if (msg.includes('missing-email')) return 'Ingresa tu correo'
+  if (msg.includes('too-many-requests'))
+    return 'Demasiados intentos. Espera unos minutos antes de volver a intentarlo.'
   if (msg.includes('popup-closed-by-user')) return 'Cerraste la ventana de Google'
   if (msg.includes('network')) return 'Sin conexion a internet'
   return msg.replace('Firebase: ', '').replace(/\(auth\/[^)]+\)\.?/g, '').trim() || 'Ocurrio un error'

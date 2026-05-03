@@ -106,15 +106,27 @@ export function useAmigos(uid: string | undefined) {
           setCargando(false)
           return
         }
-        const docs = await Promise.all(otros.map((u) => getDoc(doc(db, 'usuarios', u))))
-        const lista: PerfilUsuario[] = []
-        docs.forEach((d) => {
-          if (d.exists()) lista.push(d.data() as PerfilUsuario)
-        })
-        setPerfiles(lista)
+        try {
+          const docs = await Promise.all(
+            otros.map((u) =>
+              getDoc(doc(db, 'usuarios', u)).catch(() => null),
+            ),
+          )
+          const lista: PerfilUsuario[] = []
+          docs.forEach((d) => {
+            if (d && d.exists()) lista.push(d.data() as PerfilUsuario)
+          })
+          setPerfiles(lista)
+        } catch (err) {
+          console.error('[useAmigos] error cargando perfiles', err)
+        } finally {
+          setCargando(false)
+        }
+      },
+      (err) => {
+        console.error('[useAmigos] snapshot error', err)
         setCargando(false)
       },
-      () => setCargando(false),
     )
     return unsub
   }, [uid])

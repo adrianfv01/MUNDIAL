@@ -1,6 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Star, Plus, Minus, Check } from 'lucide-react'
-import { useCallback, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+} from 'react'
 import { cn } from '@/lib/utils'
 import type { Estampa } from '@/lib/types'
 
@@ -13,6 +20,7 @@ interface StickerCardProps {
   onIncrementar?: () => void
   onDecrementar?: () => void
   soloLectura?: boolean
+  destacar?: boolean
 }
 
 interface FlotanteFeedback {
@@ -30,16 +38,20 @@ function vibrar(ms: number) {
   }
 }
 
-export function StickerCard({
-  estampa,
-  cantidad,
-  colorEquipo,
-  colorSecundario,
-  bandera,
-  onIncrementar,
-  onDecrementar,
-  soloLectura,
-}: StickerCardProps) {
+export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function StickerCard(
+  {
+    estampa,
+    cantidad,
+    colorEquipo,
+    colorSecundario,
+    bandera,
+    onIncrementar,
+    onDecrementar,
+    soloLectura,
+    destacar,
+  },
+  ref,
+) {
   const tienes = cantidad > 0
   const repetidas = cantidad > 1
   const esEspecial = estampa.tipo === 'especial' || estampa.foil
@@ -114,7 +126,21 @@ export function StickerCard({
 
   return (
     <motion.div
+      ref={ref}
       whileTap={!soloLectura ? { scale: 0.97 } : undefined}
+      animate={
+        destacar
+          ? {
+              scale: [1, 1.08, 1],
+              boxShadow: [
+                '0 0 0 0 rgba(242, 193, 78, 0)',
+                '0 0 0 6px rgba(242, 193, 78, 0.55)',
+                '0 0 0 0 rgba(242, 193, 78, 0)',
+              ],
+            }
+          : undefined
+      }
+      transition={destacar ? { duration: 1.6, repeat: 1, ease: 'easeInOut' } : undefined}
       onClick={soloLectura ? undefined : handleCardClick}
       onContextMenu={(e) => e.preventDefault()}
       role={soloLectura ? undefined : 'button'}
@@ -137,6 +163,7 @@ export function StickerCard({
           : 'border-white/10 bg-white/5 opacity-75 hover:opacity-100 cursor-pointer',
         esEspecial && tienes && 'shadow-foil',
         soloLectura && 'cursor-default',
+        destacar && 'ring-4 ring-trofeo-300 ring-offset-2 ring-offset-carbon',
       )}
       style={tienes ? { background: fondoBase } : undefined}
       aria-label={`${estampa.nombre} ${tienes ? `(tienes ${cantidad})` : '(falta)'}`}
@@ -287,4 +314,4 @@ export function StickerCard({
       </AnimatePresence>
     </motion.div>
   )
-}
+})

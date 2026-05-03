@@ -46,6 +46,21 @@
     background-color: #F2C14E;
     color: #0B0B0B;
   }
+
+}
+
+/* Evita que iOS Safari haga auto-zoom al enfocar un input
+   en moviles. Safari solo hace auto-zoom cuando el campo
+   tiene fuente menor a 16px. La regla solo aplica en
+   pantallas de telefono para no afectar el diseno en
+   pantallas mas grandes. Usamos !important para ganarle
+   a las utilidades de Tailwind (text-sm, text-xs, etc). */
+@media (max-width: 640px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @layer components {

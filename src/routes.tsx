@@ -1,29 +1,90 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ComponentType } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { PantallaCargando } from '@/components/ui/Spinner'
 import { AppShell } from '@/components/layout/AppShell'
 import { MiAlbumPage } from '@/pages/MiAlbum'
 
-const LoginPage = lazy(() => import('@/pages/Login').then((m) => ({ default: m.LoginPage })))
-const CrearUsernamePage = lazy(() =>
-  import('@/pages/CrearUsername').then((m) => ({ default: m.CrearUsernamePage })),
-)
-const EquipoPage = lazy(() =>
-  import('@/pages/Equipo').then((m) => ({ default: m.EquipoPage })),
-)
-const AmigosPage = lazy(() =>
-  import('@/pages/Amigos').then((m) => ({ default: m.AmigosPage })),
-)
-const PerfilAmigoPage = lazy(() =>
-  import('@/pages/PerfilAmigo').then((m) => ({ default: m.PerfilAmigoPage })),
-)
-const IntercambiosPage = lazy(() =>
-  import('@/pages/Intercambios').then((m) => ({ default: m.IntercambiosPage })),
-)
-const PerfilPage = lazy(() =>
-  import('@/pages/Perfil').then((m) => ({ default: m.PerfilPage })),
-)
+type Cargador<T> = () => Promise<{ default: T }>
+
+/**
+ * Envuelve un import dinamico para que reintente una vez y, si vuelve a fallar
+ * (tipico tras un deploy nuevo donde los hashes de chunks ya no existen), fuerce
+ * un reload completo. Sin esto el Suspense se queda colgado para siempre.
+ */
+function lazyResiliente<T extends ComponentType<unknown>>(cargador: Cargador<T>) {
+  return lazy(async () => {
+    try {
+      return await cargador()
+    } catch {
+      try {
+        await new Promise((r) => setTimeout(r, 350))
+        return await cargador()
+      } catch (err) {
+        const clave = 'mundial:recarga-chunk'
+        const yaIntento = sessionStorage.getItem(clave)
+        if (!yaIntento) {
+          sessionStorage.setItem(clave, String(Date.now()))
+          window.location.reload()
+          return new Promise<{ default: T }>(() => {})
+        }
+        throw err
+      }
+    }
+  })
+}
+
+const cargarLogin = () => import('@/pages/Login').then((m) => ({ default: m.LoginPage }))
+const cargarCrearUsername = () =>
+  import('@/pages/CrearUsername').then((m) => ({ default: m.CrearUsernamePage }))
+const cargarEquipo = () => import('@/pages/Equipo').then((m) => ({ default: m.EquipoPage }))
+const cargarAmigos = () => import('@/pages/Amigos').then((m) => ({ default: m.AmigosPage }))
+const cargarPerfilAmigo = () =>
+  import('@/pages/PerfilAmigo').then((m) => ({ default: m.PerfilAmigoPage }))
+const cargarIntercambios = () =>
+  import('@/pages/Intercambios').then((m) => ({ default: m.IntercambiosPage }))
+const cargarPerfil = () => import('@/pages/Perfil').then((m) => ({ default: m.PerfilPage }))
+
+const LoginPage = lazyResiliente(cargarLogin)
+const CrearUsernamePage = lazyResiliente(cargarCrearUsername)
+const EquipoPage = lazyResiliente(cargarEquipo)
+const AmigosPage = lazyResiliente(cargarAmigos)
+const PerfilAmigoPage = lazyResiliente(cargarPerfilAmigo)
+const IntercambiosPage = lazyResiliente(cargarIntercambios)
+const PerfilPage = lazyResiliente(cargarPerfil)
+
+let yaPrecargo = false
+/**
+ * Precarga en segundo plano los chunks de las paginas principales para que al
+ * navegar desde el bottom nav ya esten listos. En celulares con red lenta esto
+ * elimina el spinner largo al cambiar de seccion.
+ */
+export function precargarRutasPrincipales() {
+  if (yaPrecargo) return
+  yaPrecargo = true
+  const cargas: Cargador<unknown>[] = [
+    cargarAmigos,
+    cargarIntercambios,
+    cargarPerfil,
+    cargarEquipo,
+    cargarPerfilAmigo,
+  ]
+  const ejecutar = () => {
+    for (const c of cargas) {
+      c().catch(() => {
+        // si falla, el lazyResiliente se hara cargo cuando el user navegue
+      })
+    }
+  }
+  const w = window as Window & {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+  }
+  if (typeof w.requestIdleCallback === 'function') {
+    w.requestIdleCallback(ejecutar, { timeout: 2500 })
+  } else {
+    setTimeout(ejecutar, 1500)
+  }
+}
 
 function Carga() {
   return <PantallaCargando mensaje="Cargando..." />

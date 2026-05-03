@@ -748,10 +748,10 @@ function PanelPares({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-1 text-[10px] uppercase tracking-wider">
-        <span className="text-campo-200 font-bold">Tu entregas</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-1 text-[10px] uppercase tracking-wider">
+        <span className="text-campo-200 font-bold truncate">Tu entregas</span>
         <span className="text-crema/30">por</span>
-        <span className="text-trofeo-200 font-bold text-right">El entrega</span>
+        <span className="text-trofeo-200 font-bold text-right truncate">El entrega</span>
       </div>
       <div className="space-y-1.5">
         {pares.map(({ mia, suya }, idx) => {
@@ -760,7 +760,7 @@ function PanelPares({
           return (
             <div
               key={`${mia.id}-${suya.id}`}
-              className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"
+              className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5"
             >
               <MiniSticker
                 estampa={mia}

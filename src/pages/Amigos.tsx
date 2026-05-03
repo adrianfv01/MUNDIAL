@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Search, Send, Users, UserPlus, X } from 'lucide-react'
+import { Check, Search, Send, Users, UserPlus, UserMinus, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -10,6 +10,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import {
   buscarPorUsername,
   useAccionesAmistad,
@@ -23,10 +24,27 @@ type Tab = 'amigos' | 'solicitudes' | 'buscar'
 export function AmigosPage() {
   const { user, perfil } = useAuth()
   const [tab, setTab] = useState<Tab>('amigos')
+  const [paraQuitar, setParaQuitar] = useState<PerfilUsuario | null>(null)
+  const [quitando, setQuitando] = useState(false)
+  const [errorQuitar, setErrorQuitar] = useState<string | null>(null)
 
   const { perfiles, cargando: cargAm } = useAmigos(user?.uid)
   const { entrantes, salientes, cargando: cargSol } = useSolicitudes(user?.uid)
   const acciones = useAccionesAmistad(user?.uid, perfil)
+
+  const confirmarQuitar = async () => {
+    if (!paraQuitar) return
+    setErrorQuitar(null)
+    setQuitando(true)
+    try {
+      await acciones.eliminarAmigo(paraQuitar.uid)
+      setParaQuitar(null)
+    } catch (err) {
+      setErrorQuitar(err instanceof Error ? err.message : 'No se pudo quitar al amigo')
+    } finally {
+      setQuitando(false)
+    }
+  }
 
   const tabs: { id: Tab; label: string; cantidad?: number }[] = [
     { id: 'amigos', label: 'Amigos', cantidad: perfiles.length },
@@ -107,6 +125,18 @@ export function AmigosPage() {
                   >
                     Ver album
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErrorQuitar(null)
+                      setParaQuitar(p)
+                    }}
+                    aria-label={`Quitar a @${p.username} de amigos`}
+                    title="Quitar amigo"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-rojo/10 hover:bg-rojo/20 text-rojo border border-rojo/30 tap-target"
+                  >
+                    <UserMinus className="h-4 w-4" />
+                  </button>
                 </Card>
               ))
             )}
@@ -199,6 +229,58 @@ export function AmigosPage() {
           />
         )}
       </AnimatePresence>
+
+      <Modal
+        abierto={!!paraQuitar}
+        onCerrar={() => {
+          if (!quitando) {
+            setParaQuitar(null)
+            setErrorQuitar(null)
+          }
+        }}
+        titulo="Quitar amigo"
+      >
+        {paraQuitar && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar nombre={paraQuitar.displayName} url={paraQuitar.photoURL} tamano={48} />
+              <div className="min-w-0">
+                <p className="titulo-display text-base truncate">{paraQuitar.displayName}</p>
+                <p className="text-xs text-crema/60 truncate">@{paraQuitar.username}</p>
+              </div>
+            </div>
+            <p className="text-sm text-crema/80">
+              ¿Seguro que quieres quitar a <span className="font-bold">@{paraQuitar.username}</span> de tus amigos?
+              Dejaras de ver su album e intercambios. Si cambias de opinion tendras que enviarle una nueva solicitud.
+            </p>
+            {errorQuitar && (
+              <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-lg p-3">
+                {errorQuitar}
+              </p>
+            )}
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <Button
+                variante="fantasma"
+                onClick={() => {
+                  setParaQuitar(null)
+                  setErrorQuitar(null)
+                }}
+                disabled={quitando}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variante="peligro"
+                cargando={quitando}
+                onClick={confirmarQuitar}
+                iconoIzq={<UserMinus className="h-4 w-4" />}
+              >
+                Quitar amigo
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

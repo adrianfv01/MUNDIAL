@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Filter, Star } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -15,12 +15,16 @@ type Filtro = 'todas' | 'pegadas' | 'faltan' | 'repes'
 
 export function EquipoPage() {
   const { codigo } = useParams<{ codigo: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const estampaResaltada = searchParams.get('estampa')
   const { user } = useAuth()
   const { equipos, cargando: cargandoCat } = useCatalogo()
   const { estampas, cargando: cargandoEqs } = useEstampasEquipo(codigo)
   const { coleccion, incrementar, decrementar } = useColeccion(user?.uid)
 
   const [filtro, setFiltro] = useState<Filtro>('todas')
+  const refsEstampas = useRef<Map<string, HTMLDivElement | null>>(new Map())
+  const [destacadaActiva, setDestacadaActiva] = useState<string | null>(null)
 
   const equipo = useMemo(() => equipos.find((e) => e.codigo === codigo), [equipos, codigo])
   const esEspeciales = codigo === 'FWC'
@@ -45,6 +49,50 @@ export function EquipoPage() {
       return true
     })
   }, [estampas, coleccion, filtro])
+
+  // Si llegamos buscando una estampa, garantizamos que sea visible
+  // forzando el filtro a "todas" cuando el filtro actual la oculta.
+  useEffect(() => {
+    if (!estampaResaltada || estampas.length === 0) return
+    const objetivo = estampas.find((e) => e.id === estampaResaltada)
+    if (!objetivo) return
+    const c = coleccion[objetivo.id]?.cantidad ?? 0
+    const visibleEnFiltro =
+      filtro === 'todas' ||
+      (filtro === 'pegadas' && c > 0) ||
+      (filtro === 'faltan' && c === 0) ||
+      (filtro === 'repes' && c > 1)
+    if (!visibleEnFiltro) setFiltro('todas')
+  }, [estampaResaltada, estampas, coleccion, filtro])
+
+  // Hace scroll y dispara la animacion de resaltado una vez que la
+  // tarjeta de la estampa elegida esta montada en el DOM.
+  useEffect(() => {
+    if (!estampaResaltada) return
+    const el = refsEstampas.current.get(estampaResaltada)
+    if (!el) return
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setDestacadaActiva(estampaResaltada)
+    }, 120)
+    const limpiar = window.setTimeout(() => {
+      setDestacadaActiva(null)
+      // Quitamos el query param para que el resaltado no se repita
+      // si el usuario interactua con la pagina.
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('estampa')
+          return next
+        },
+        { replace: true },
+      )
+    }, 3600)
+    return () => {
+      window.clearTimeout(t)
+      window.clearTimeout(limpiar)
+    }
+  }, [estampaResaltada, visibles, setSearchParams])
 
   if (cargandoCat || cargandoEqs) {
     return (
@@ -147,10 +195,14 @@ export function EquipoPage() {
       {visibles.length === 0 ? (
         <p className="text-center text-crema/50 py-10">No hay estampas para mostrar</p>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9 gap-2.5 sm:gap-3">
           {visibles.map((e) => (
             <StickerCard
               key={e.id}
+              ref={(node) => {
+                if (node) refsEstampas.current.set(e.id, node)
+                else refsEstampas.current.delete(e.id)
+              }}
               estampa={e}
               cantidad={coleccion[e.id]?.cantidad ?? 0}
               colorEquipo={colorPri}
@@ -158,6 +210,7 @@ export function EquipoPage() {
               bandera={esEspeciales ? undefined : equipo!.bandera}
               onIncrementar={() => incrementar(e.id)}
               onDecrementar={() => decrementar(e.id)}
+              destacar={destacadaActiva === e.id}
             />
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Copy, Link2, QrCode, Share2 } from 'lucide-react'
+import { Check, Copy, Link2, Share2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 
@@ -21,7 +21,6 @@ export function CompartirPerfil({
   porcentaje,
 }: CompartirPerfilProps) {
   const [copiado, setCopiado] = useState<EstadoCopia>('idle')
-  const [verQR, setVerQR] = useState(false)
 
   const url = useMemo(
     () => `${window.location.origin}/amigo/${username}`,
@@ -66,10 +65,8 @@ export function CompartirPerfil({
   }
 
   const linkWhatsapp = `https://wa.me/?text=${encodeURIComponent(textoCompleto)}`
-  const linkQR = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&color=0E7C3A&bgcolor=FFFFFF&data=${encodeURIComponent(url)}`
 
   const cerrar = () => {
-    setVerQR(false)
     setCopiado('idle')
     onCerrar()
   }
@@ -143,36 +140,6 @@ export function CompartirPerfil({
             <span>WhatsApp</span>
           </a>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setVerQR((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3 py-3 tap-target transition"
-        >
-          <span className="flex items-center gap-2 text-sm text-crema">
-            <QrCode className="h-4 w-4 text-trofeo-300" />
-            <span className="font-semibold uppercase tracking-wider text-xs">
-              {verQR ? 'Ocultar codigo QR' : 'Mostrar codigo QR'}
-            </span>
-          </span>
-          <span className="text-[11px] text-crema/60">Para escanear de cerca</span>
-        </button>
-
-        {verQR && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-4">
-            <img
-              src={linkQR}
-              alt={`Codigo QR para @${username}`}
-              width={240}
-              height={240}
-              className="h-60 w-60"
-              loading="lazy"
-            />
-            <p className="text-[11px] text-carbon/70 text-center">
-              Apunten su camara para abrir tu album
-            </p>
-          </div>
-        )}
 
         <p className="text-center text-[11px] text-crema/40">
           {copiado === 'todo' && 'Texto y enlace copiados al portapapeles'}

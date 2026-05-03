@@ -3,6 +3,9 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      screens: {
+        xs: '480px',
+      },
       colors: {
         campo: {
           50: '#E9F6EE',

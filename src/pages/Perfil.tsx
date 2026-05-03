@@ -1,24 +1,85 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, Copy, LogOut, Share2, Trophy } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  LogOut,
+  Share2,
+  Trash2,
+  Trophy,
+} from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { ProgresoBar } from '@/components/ui/ProgresoBar'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion, useResumen } from '@/hooks/useColeccion'
 import { useAmigos } from '@/hooks/useAmigos'
 import { CompartirPerfil } from '@/components/perfil/CompartirPerfil'
 
+const FRASE_CONFIRMACION = 'ELIMINAR'
+
 export function PerfilPage() {
-  const { user, perfil, cerrarSesion } = useAuth()
+  const { user, perfil, cerrarSesion, eliminarCuenta } = useAuth()
   const { estampas } = useCatalogo()
   const { coleccion } = useColeccion(user?.uid)
   const resumen = useResumen(coleccion, estampas)
   const { perfiles } = useAmigos(user?.uid)
   const [abrirCompartir, setAbrirCompartir] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [abrirEliminar, setAbrirEliminar] = useState(false)
+  const [confirmacion, setConfirmacion] = useState('')
+  const [passwordEliminar, setPasswordEliminar] = useState('')
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
+  const [eliminando, setEliminando] = useState(false)
+  const [requierePassword, setRequierePassword] = useState(false)
+
+  const esCuentaPassword = user?.providerData?.[0]?.providerId === 'password'
+
+  const cerrarModalEliminar = () => {
+    if (eliminando) return
+    setAbrirEliminar(false)
+    setConfirmacion('')
+    setPasswordEliminar('')
+    setErrorEliminar(null)
+    setRequierePassword(false)
+  }
+
+  const confirmarEliminacion = async () => {
+    if (confirmacion.trim().toUpperCase() !== FRASE_CONFIRMACION) {
+      setErrorEliminar(`Escribe ${FRASE_CONFIRMACION} para confirmar`)
+      return
+    }
+    if (esCuentaPassword && !passwordEliminar) {
+      setErrorEliminar('Ingresa tu contrasena para confirmar')
+      setRequierePassword(true)
+      return
+    }
+    setEliminando(true)
+    setErrorEliminar(null)
+    try {
+      await eliminarCuenta(passwordEliminar || undefined)
+    } catch (err) {
+      const code = (err as { code?: string }).code
+      if (code === 'auth/password-required') {
+        setRequierePassword(true)
+        setErrorEliminar('Necesitamos tu contrasena para confirmar')
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setErrorEliminar('Contrasena incorrecta')
+      } else if (code === 'auth/popup-closed-by-user') {
+        setErrorEliminar('Cerraste la ventana antes de confirmar')
+      } else {
+        setErrorEliminar(
+          err instanceof Error ? err.message : 'No se pudo eliminar la cuenta',
+        )
+      }
+      setEliminando(false)
+    }
+  }
 
   const copiarUsername = async () => {
     if (!perfil?.username) return
@@ -116,6 +177,25 @@ export function PerfilPage() {
         App de fans, no afiliada a FIFA o Panini.
       </p>
 
+      <Card className="!p-3 border-rojo/30 bg-rojo/5">
+        <p className="text-xs uppercase tracking-wider text-rojo/90 mb-1 font-semibold">
+          Zona de peligro
+        </p>
+        <p className="text-xs text-crema/70">
+          Elimina tu cuenta y todos tus datos del album. Esta accion no se puede
+          deshacer.
+        </p>
+        <Button
+          ancho
+          variante="peligro"
+          className="mt-3"
+          onClick={() => setAbrirEliminar(true)}
+          iconoIzq={<Trash2 className="h-4 w-4" />}
+        >
+          Eliminar cuenta
+        </Button>
+      </Card>
+
       {perfil && (
         <CompartirPerfil
           abierto={abrirCompartir}
@@ -125,6 +205,88 @@ export function PerfilPage() {
           porcentaje={resumen.porcentaje}
         />
       )}
+
+      <Modal
+        abierto={abrirEliminar}
+        onCerrar={cerrarModalEliminar}
+        titulo="Eliminar cuenta"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-2xl bg-rojo/10 border border-rojo/40 p-3">
+            <AlertTriangle className="h-5 w-5 text-rojo shrink-0 mt-0.5" />
+            <div className="text-sm text-crema/90 space-y-1">
+              <p className="font-semibold">Esta accion es permanente.</p>
+              <p className="text-crema/70 text-xs">
+                Se borraran tu album, repetidas, amigos, solicitudes y tu nombre
+                de usuario <span className="text-trofeo-300">@{perfil?.username}</span>.
+                No podremos recuperar nada despues.
+              </p>
+            </div>
+          </div>
+
+          <Input
+            etiqueta={`Escribe ${FRASE_CONFIRMACION} para confirmar`}
+            value={confirmacion}
+            onChange={(e) => {
+              setConfirmacion(e.target.value)
+              if (errorEliminar) setErrorEliminar(null)
+            }}
+            placeholder={FRASE_CONFIRMACION}
+            autoComplete="off"
+            autoCapitalize="characters"
+            disabled={eliminando}
+          />
+
+          {esCuentaPassword && (
+            <Input
+              etiqueta="Tu contrasena"
+              type="password"
+              value={passwordEliminar}
+              onChange={(e) => {
+                setPasswordEliminar(e.target.value)
+                if (errorEliminar) setErrorEliminar(null)
+              }}
+              placeholder="Confirma tu contrasena"
+              autoComplete="current-password"
+              ayuda={
+                requierePassword
+                  ? 'Necesitamos tu contrasena para confirmar la eliminacion.'
+                  : undefined
+              }
+              disabled={eliminando}
+            />
+          )}
+
+          {!esCuentaPassword && (
+            <p className="text-xs text-crema/60">
+              Es posible que te pidamos volver a iniciar sesion con Google para
+              confirmar.
+            </p>
+          )}
+
+          {errorEliminar && (
+            <p className="text-sm text-rojo">{errorEliminar}</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Button
+              variante="secundario"
+              onClick={cerrarModalEliminar}
+              disabled={eliminando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variante="peligro"
+              onClick={confirmarEliminacion}
+              cargando={eliminando}
+              iconoIzq={<Trash2 className="h-4 w-4" />}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

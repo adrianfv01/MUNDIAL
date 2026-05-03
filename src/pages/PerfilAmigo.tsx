@@ -1,30 +1,51 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Repeat2 } from 'lucide-react'
+import { ArrowLeft, Repeat2, UserMinus } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion, calcularResumen, cargarColeccionUsuario } from '@/hooks/useColeccion'
-import { buscarPorUsername } from '@/hooks/useAmigos'
+import { buscarPorUsername, useAccionesAmistad } from '@/hooks/useAmigos'
 import { Avatar } from '@/components/ui/Avatar'
 import { ProgresoBar } from '@/components/ui/ProgresoBar'
 import { Spinner } from '@/components/ui/Spinner'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { StickerCard } from '@/components/estampas/StickerCard'
 import type { Coleccion, Equipo, PerfilUsuario } from '@/lib/types'
 
 export function PerfilAmigoPage() {
   const { username } = useParams<{ username: string }>()
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, perfil } = useAuth()
   const { equipos, estampas, cargando: cargCat } = useCatalogo()
   const { coleccion: miColeccion } = useColeccion(user?.uid)
+  const acciones = useAccionesAmistad(user?.uid, perfil)
 
   const [amigo, setAmigo] = useState<PerfilUsuario | null | 'noenc'>('noenc')
   const [colAmigo, setColAmigo] = useState<Coleccion>({})
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [confirmarQuitar, setConfirmarQuitar] = useState(false)
+  const [quitando, setQuitando] = useState(false)
+  const [errorQuitar, setErrorQuitar] = useState<string | null>(null)
+
+  const onQuitarAmigo = async () => {
+    if (!amigo || amigo === 'noenc') return
+    setErrorQuitar(null)
+    setQuitando(true)
+    try {
+      await acciones.eliminarAmigo(amigo.uid)
+      setConfirmarQuitar(false)
+      navigate('/amigos')
+    } catch (err) {
+      setErrorQuitar(err instanceof Error ? err.message : 'No se pudo quitar al amigo')
+    } finally {
+      setQuitando(false)
+    }
+  }
 
   useEffect(() => {
     let cancelado = false
@@ -124,10 +145,24 @@ export function PerfilAmigoPage() {
       >
         <div className="flex items-center gap-3">
           <Avatar nombre={amigo!.displayName} url={amigo!.photoURL} tamano={56} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="titulo-display text-2xl truncate">{amigo!.displayName}</h1>
             <p className="text-xs text-crema/70">@{amigo!.username}</p>
           </div>
+          {user && amigo && amigo.uid !== user.uid && (
+            <button
+              type="button"
+              onClick={() => {
+                setErrorQuitar(null)
+                setConfirmarQuitar(true)
+              }}
+              aria-label="Quitar amigo"
+              title="Quitar amigo"
+              className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-rojo/10 hover:bg-rojo/20 text-rojo border border-rojo/30 tap-target shrink-0"
+            >
+              <UserMinus className="h-5 w-5" />
+            </button>
+          )}
         </div>
         <div className="mt-4">
           <ProgresoBar
@@ -163,7 +198,7 @@ export function PerfilAmigoPage() {
       {elOfreceParaTi.length > 0 && (
         <section>
           <h2 className="titulo-display text-lg mb-2 px-1">Sus repes que te faltan</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-2.5">
             {elOfreceParaTi.slice(0, 20).map((e) => {
               const eq = equipos.find((q) => q.codigo === e.equipoId)
               return (
@@ -184,7 +219,7 @@ export function PerfilAmigoPage() {
 
       <section>
         <h2 className="titulo-display text-lg mb-2 px-1">Su album</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {equipos.map((eq) => {
             const data = porEquipo[eq.codigo] ?? { total: 0, pegadas: 0 }
             const pct = data.total ? Math.round((data.pegadas / data.total) * 100) : 0
@@ -218,6 +253,58 @@ export function PerfilAmigoPage() {
           })}
         </div>
       </section>
+
+      <Modal
+        abierto={confirmarQuitar}
+        onCerrar={() => {
+          if (!quitando) {
+            setConfirmarQuitar(false)
+            setErrorQuitar(null)
+          }
+        }}
+        titulo="Quitar amigo"
+      >
+        {amigo && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar nombre={amigo.displayName} url={amigo.photoURL} tamano={48} />
+              <div className="min-w-0">
+                <p className="titulo-display text-base truncate">{amigo.displayName}</p>
+                <p className="text-xs text-crema/60 truncate">@{amigo.username}</p>
+              </div>
+            </div>
+            <p className="text-sm text-crema/80">
+              ¿Seguro que quieres quitar a <span className="font-bold">@{amigo.username}</span> de tus amigos?
+              Dejaras de ver su album e intercambios. Si cambias de opinion tendras que enviarle una nueva solicitud.
+            </p>
+            {errorQuitar && (
+              <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-lg p-3">
+                {errorQuitar}
+              </p>
+            )}
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <Button
+                variante="fantasma"
+                onClick={() => {
+                  setConfirmarQuitar(false)
+                  setErrorQuitar(null)
+                }}
+                disabled={quitando}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variante="peligro"
+                cargando={quitando}
+                onClick={onQuitarAmigo}
+                iconoIzq={<UserMinus className="h-4 w-4" />}
+              >
+                Quitar amigo
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

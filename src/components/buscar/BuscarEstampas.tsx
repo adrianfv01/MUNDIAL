@@ -203,7 +203,7 @@ function ItemResultado({
   return (
     <li>
       <Link
-        to={`/equipo/${estampa.equipoId}`}
+        to={`/equipo/${estampa.equipoId}?estampa=${encodeURIComponent(estampa.id)}`}
         onClick={onIr}
         className={cn(
           'flex items-center gap-3 rounded-xl border px-2.5 py-2 tap-target transition',
