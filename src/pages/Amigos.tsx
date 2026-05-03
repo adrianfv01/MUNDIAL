@@ -162,28 +162,34 @@ export function AmigosPage() {
                     <p className="text-sm text-crema/50 px-1">No tienes solicitudes pendientes.</p>
                   ) : (
                     entrantes.map((s) => (
-                      <Card key={s.id} className="!p-3 flex items-center gap-3">
-                        <Avatar nombre={s.deUsername} tamano={40} />
-                        <div className="flex-1 min-w-0">
-                          <p className="titulo-display text-sm">@{s.deUsername}</p>
-                          <p className="text-[11px] text-crema/50">Quiere ser tu amigo</p>
+                      <Card key={s.id} className="!p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar nombre={s.deUsername} tamano={40} />
+                          <div className="flex-1 min-w-0">
+                            <p className="titulo-display text-sm truncate">@{s.deUsername}</p>
+                            <p className="text-[11px] text-crema/50">Quiere ser tu amigo</p>
+                          </div>
                         </div>
-                        <Button
-                          tamano="sm"
-                          variante="trofeo"
-                          iconoIzq={<Check className="h-4 w-4" />}
-                          onClick={() => acciones.aceptar(s.id, s.de)}
-                        >
-                          Aceptar
-                        </Button>
-                        <Button
-                          tamano="sm"
-                          variante="fantasma"
-                          iconoIzq={<X className="h-4 w-4" />}
-                          onClick={() => acciones.rechazar(s.id)}
-                        >
-                          Rechazar
-                        </Button>
+                        <div className="flex gap-2 sm:ml-auto">
+                          <Button
+                            tamano="sm"
+                            variante="trofeo"
+                            iconoIzq={<Check className="h-4 w-4" />}
+                            onClick={() => acciones.aceptar(s.id, s.de)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            Aceptar
+                          </Button>
+                          <Button
+                            tamano="sm"
+                            variante="fantasma"
+                            iconoIzq={<X className="h-4 w-4" />}
+                            onClick={() => acciones.rechazar(s.id)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            Rechazar
+                          </Button>
+                        </div>
                       </Card>
                     ))
                   )}
@@ -194,16 +200,19 @@ export function AmigosPage() {
                     <p className="text-sm text-crema/50 px-1">No has enviado solicitudes.</p>
                   ) : (
                     salientes.map((s) => (
-                      <Card key={s.id} className="!p-3 flex items-center gap-3">
-                        <Avatar nombre={s.paraUsername} tamano={40} />
-                        <div className="flex-1 min-w-0">
-                          <p className="titulo-display text-sm">@{s.paraUsername}</p>
-                          <p className="text-[11px] text-crema/50">En espera de respuesta</p>
+                      <Card key={s.id} className="!p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar nombre={s.paraUsername} tamano={40} />
+                          <div className="flex-1 min-w-0">
+                            <p className="titulo-display text-sm truncate">@{s.paraUsername}</p>
+                            <p className="text-[11px] text-crema/50">En espera de respuesta</p>
+                          </div>
                         </div>
                         <Button
                           tamano="sm"
                           variante="fantasma"
                           onClick={() => acciones.cancelarSolicitud(s.id)}
+                          className="sm:ml-auto"
                         >
                           Cancelar
                         </Button>
