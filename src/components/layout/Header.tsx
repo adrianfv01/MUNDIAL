@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { BookMarked, Repeat2, Search, Trophy, Users } from 'lucide-react'
+import { BookMarked, Repeat2, Search, Trophy, Users, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
@@ -17,15 +17,58 @@ const navItems = [
 
 export function Header() {
   const { perfil, user } = useAuth()
-  const [buscar, setBuscar] = useState(false)
+  const [valor, setValor] = useState('')
+  const [mostrar, setMostrar] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
 
+  const cerrar = () => {
+    setValor('')
+    setMostrar(false)
+    inputRef.current?.blur()
+  }
+
   useEffect(() => {
-    if (buscar) setBuscar(false)
+    cerrar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
-  const abrirBuscador = () => setBuscar(true)
+  useEffect(() => {
+    if (!mostrar) return
+    const original = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [mostrar])
+
+  useEffect(() => {
+    if (!mostrar) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        cerrar()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mostrar])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+      }
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <>
@@ -67,36 +110,56 @@ export function Header() {
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={abrirBuscador}
-            aria-label="Buscar estampa, jugador o equipo"
+          <div
             className={cn(
               'flex-1 min-w-0 group relative',
               'inline-flex items-center gap-2.5 h-10 lg:h-11 px-4 rounded-full',
               'bg-gradient-to-r from-white/[0.09] via-white/[0.07] to-white/[0.09]',
-              'hover:from-trofeo-300/10 hover:via-trofeo-300/5 hover:to-trofeo-300/10',
-              'active:bg-white/[0.16]',
-              'border border-trofeo-300/25 hover:border-trofeo-300/60',
-              'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] hover:shadow-[0_0_20px_-4px_rgba(255,193,7,0.25)]',
-              'text-left text-crema/70 hover:text-crema',
-              'transition tap-target focus:outline-none',
-              'focus-visible:ring-2 focus-visible:ring-trofeo-300/60 focus-visible:border-trofeo-300/60',
+              'border transition',
+              mostrar
+                ? 'border-trofeo-300/60 shadow-[0_0_20px_-4px_rgba(255,193,7,0.25)]'
+                : 'border-trofeo-300/25 hover:border-trofeo-300/60',
             )}
           >
             <Search
-              className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-trofeo-300 group-hover:scale-110 transition-transform"
+              className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-trofeo-300"
               strokeWidth={2.5}
             />
-            <span className="text-sm lg:text-[15px] font-medium truncate">
-              <span className="sm:hidden">Buscar estampa...</span>
-              <span className="hidden sm:inline lg:hidden">Buscar estampa, jugador o equipo...</span>
-              <span className="hidden lg:inline">Buscar estampa, jugador o equipo del Mundial...</span>
-            </span>
-            <kbd className="hidden lg:inline-flex ml-auto items-center text-[10px] uppercase tracking-wider font-bold text-trofeo-300/80 bg-carbon/60 border border-trofeo-300/30 rounded px-1.5 py-0.5">
-              /
-            </kbd>
-          </button>
+            <input
+              ref={inputRef}
+              type="search"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              onFocus={() => setMostrar(true)}
+              placeholder="Buscar estampa, jugador o equipo..."
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              inputMode="search"
+              enterKeyHint="search"
+              aria-label="Buscar estampa, jugador o equipo"
+              className={cn(
+                'flex-1 min-w-0 bg-transparent border-0 outline-none',
+                'text-sm lg:text-[15px] font-medium text-crema',
+                'placeholder:text-crema/60',
+              )}
+            />
+            {mostrar || valor.length > 0 ? (
+              <button
+                type="button"
+                onClick={cerrar}
+                aria-label="Cerrar búsqueda"
+                className="shrink-0 -mr-2 p-2 rounded-full text-crema/60 hover:text-crema hover:bg-white/10 tap-target"
+              >
+                <X className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            ) : (
+              <kbd className="hidden lg:inline-flex ml-auto items-center text-[10px] uppercase tracking-wider font-bold text-trofeo-300/80 bg-carbon/60 border border-trofeo-300/30 rounded px-1.5 py-0.5">
+                /
+              </kbd>
+            )}
+          </div>
 
           <Link
             to="/perfil"
@@ -120,32 +183,11 @@ export function Header() {
         </div>
       </header>
 
-      {buscar && (
+      {mostrar && (
         <Suspense fallback={null}>
-          <BuscarEstampas abierto={buscar} onCerrar={() => setBuscar(false)} />
+          <BuscarEstampas valor={valor} onIrResultado={cerrar} />
         </Suspense>
       )}
-
-      <AtajoTeclado onAbrir={abrirBuscador} />
     </>
   )
-}
-
-function AtajoTeclado({ onAbrir }: { onAbrir: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null
-      if (target) {
-        const tag = target.tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
-      }
-      if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault()
-        onAbrir()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onAbrir])
-  return null
 }

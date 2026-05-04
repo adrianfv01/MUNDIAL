@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Star, Plus, Minus, Check } from 'lucide-react'
+import { Star, Plus, Minus, Check, RotateCcw } from 'lucide-react'
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -27,6 +28,14 @@ interface FlotanteFeedback {
   id: number
   delta: 1 | -1
 }
+
+interface AccionReciente {
+  delta: 1 | -1
+  cantidadNueva: number
+  expiraEn: number
+}
+
+const VENTANA_DESHACER_MS = 4000
 
 function vibrar(ms: number) {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -57,9 +66,11 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
   const esEspecial = estampa.tipo === 'especial' || estampa.foil
 
   const [flotantes, setFlotantes] = useState<FlotanteFeedback[]>([])
+  const [accionReciente, setAccionReciente] = useState<AccionReciente | null>(null)
   const idRef = useRef(0)
   const repeatTimerRef = useRef<number | null>(null)
   const repeatIntervalRef = useRef<number | null>(null)
+  const deshacerTimerRef = useRef<number | null>(null)
 
   const empujarFeedback = useCallback((delta: 1 | -1) => {
     const id = ++idRef.current
@@ -69,21 +80,60 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
     }, 650)
   }, [])
 
+  const programarOcultarDeshacer = useCallback(() => {
+    if (deshacerTimerRef.current) {
+      window.clearTimeout(deshacerTimerRef.current)
+    }
+    deshacerTimerRef.current = window.setTimeout(() => {
+      setAccionReciente(null)
+      deshacerTimerRef.current = null
+    }, VENTANA_DESHACER_MS)
+  }, [])
+
   const sumar = useCallback(() => {
     if (soloLectura || !onIncrementar) return
     onIncrementar()
     empujarFeedback(1)
     vibrar(8)
-  }, [empujarFeedback, onIncrementar, soloLectura])
+    setAccionReciente({
+      delta: 1,
+      cantidadNueva: cantidad + 1,
+      expiraEn: Date.now() + VENTANA_DESHACER_MS,
+    })
+    programarOcultarDeshacer()
+  }, [cantidad, empujarFeedback, onIncrementar, programarOcultarDeshacer, soloLectura])
 
   const restar = useCallback(() => {
     if (soloLectura || !onDecrementar || cantidad <= 0) return
     onDecrementar()
     empujarFeedback(-1)
     vibrar(12)
-  }, [cantidad, empujarFeedback, onDecrementar, soloLectura])
+    setAccionReciente({
+      delta: -1,
+      cantidadNueva: cantidad - 1,
+      expiraEn: Date.now() + VENTANA_DESHACER_MS,
+    })
+    programarOcultarDeshacer()
+  }, [cantidad, empujarFeedback, onDecrementar, programarOcultarDeshacer, soloLectura])
 
-  // Mantener presionado un botón del stepper repite la acción (auto-repeat).
+  const deshacer = useCallback(() => {
+    if (!accionReciente) return
+    if (accionReciente.delta === 1 && onDecrementar) {
+      onDecrementar()
+      empujarFeedback(-1)
+    } else if (accionReciente.delta === -1 && onIncrementar) {
+      onIncrementar()
+      empujarFeedback(1)
+    }
+    vibrar(20)
+    setAccionReciente(null)
+    if (deshacerTimerRef.current) {
+      window.clearTimeout(deshacerTimerRef.current)
+      deshacerTimerRef.current = null
+    }
+  }, [accionReciente, empujarFeedback, onDecrementar, onIncrementar])
+
+  // Mantener presionado un boton del stepper repite la accion (auto-repeat).
   const detenerRepeticion = useCallback(() => {
     if (repeatTimerRef.current) {
       window.clearTimeout(repeatTimerRef.current)
@@ -113,21 +163,39 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
     [iniciarRepeticion],
   )
 
+  useEffect(() => {
+    return () => {
+      if (deshacerTimerRef.current) window.clearTimeout(deshacerTimerRef.current)
+      if (repeatTimerRef.current) window.clearTimeout(repeatTimerRef.current)
+      if (repeatIntervalRef.current) window.clearInterval(repeatIntervalRef.current)
+    }
+  }, [])
+
   const fondoBase = colorEquipo
     ? `linear-gradient(135deg, ${colorEquipo}cc, ${colorSecundario ?? colorEquipo}cc)`
     : 'linear-gradient(135deg, #0E7C3A, #042612)'
 
+  // Tap en la tarjeta:
+  //  - Si NO tienes la estampa, suma 1 (caso seguro: la marca como "tengo").
+  //  - Si ya la tienes, ignoramos el tap para evitar +1 por accidente al hacer
+  //    scroll. En ese caso solo los botones - / + ajustan la cantidad.
+  const tapEnTarjetaSuma = !tienes
   const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
-    // Evita reaccionar a clics que vienen del stepper interno.
+    if (soloLectura) return
     const target = e.target as HTMLElement
     if (target.closest('[data-stepper="true"]')) return
+    if (target.closest('[data-deshacer="true"]')) return
+    if (!tapEnTarjetaSuma) return
     sumar()
   }
+
+  const interactivo = !soloLectura && (tapEnTarjetaSuma || tienes)
+  const mostrarDeshacer = !soloLectura && accionReciente !== null
 
   return (
     <motion.div
       ref={ref}
-      whileTap={!soloLectura ? { scale: 0.97 } : undefined}
+      whileTap={tapEnTarjetaSuma ? { scale: 0.97 } : undefined}
       animate={
         destacar
           ? {
@@ -143,14 +211,17 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
       transition={destacar ? { duration: 1.6, repeat: 1, ease: 'easeInOut' } : undefined}
       onClick={soloLectura ? undefined : handleCardClick}
       onContextMenu={(e) => e.preventDefault()}
-      role={soloLectura ? undefined : 'button'}
-      tabIndex={soloLectura ? -1 : 0}
+      role={tapEnTarjetaSuma ? 'button' : undefined}
+      tabIndex={interactivo ? 0 : -1}
       onKeyDown={(e) => {
         if (soloLectura) return
-        if (e.key === 'Enter' || e.key === ' ') {
+        if ((e.key === 'Enter' || e.key === ' ') && tapEnTarjetaSuma) {
           e.preventDefault()
           sumar()
-        } else if (e.key === '-' || e.key === 'Backspace') {
+        } else if (e.key === '+' && tienes) {
+          e.preventDefault()
+          sumar()
+        } else if ((e.key === '-' || e.key === 'Backspace') && tienes) {
           e.preventDefault()
           restar()
         }
@@ -159,8 +230,10 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
         'group relative overflow-hidden rounded-xl border text-left tap-target transition aspect-[3/4] flex flex-col select-none',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-trofeo-300/70',
         tienes
-          ? 'border-trofeo-300/60 shadow-estampa cursor-pointer'
-          : 'border-white/10 bg-white/5 opacity-75 hover:opacity-100 cursor-pointer',
+          ? 'border-trofeo-300/60 shadow-estampa'
+          : 'border-white/10 bg-white/5 opacity-75 hover:opacity-100',
+        tapEnTarjetaSuma && 'cursor-pointer',
+        !tapEnTarjetaSuma && tienes && !soloLectura && 'cursor-default',
         esEspecial && tienes && 'shadow-foil',
         soloLectura && 'cursor-default',
         destacar && 'ring-4 ring-trofeo-300 ring-offset-2 ring-offset-carbon',
@@ -168,13 +241,7 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
       style={tienes ? { background: fondoBase } : undefined}
       aria-label={`${estampa.nombre} ${tienes ? `(tienes ${cantidad})` : '(falta)'}`}
     >
-      {esEspecial && tienes && (
-        <span
-          aria-hidden
-          className="absolute inset-0 bg-foil-gradient opacity-25 mix-blend-screen pointer-events-none"
-          style={{ backgroundSize: '200% 200%' }}
-        />
-      )}
+      {esEspecial && tienes && <span aria-hidden className="foil-border z-10" />}
 
       {tienes ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-2 pointer-events-none">
@@ -214,83 +281,171 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
         </div>
       )}
 
-      <div className="relative mt-auto z-10 px-2 py-1.5 bg-carbon/70 backdrop-blur-sm border-t border-white/10 pointer-events-none">
-        <p className="text-[10px] font-semibold text-crema/90 truncate uppercase tracking-wider">
+      <div className="relative mt-auto z-10 px-2 py-1.5 bg-carbon/75 backdrop-blur-sm border-t border-white/10 pointer-events-none">
+        <p className="text-[10px] font-semibold text-crema/95 uppercase tracking-wider leading-tight line-clamp-2 break-words">
           {estampa.nombre}
         </p>
       </div>
 
-      {tienes && (
-        <span className="absolute top-1.5 left-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-campo-500 text-white shadow border border-white/30 pointer-events-none">
+      {/* Indicador "ya la tienes" para modo solo lectura. En modo editable la
+          pildora del stepper de la esquina opuesta (con su contador) ya
+          comunica que la tienes, por lo que se omite para no abarrotar la UI
+          en tarjetas pequenas. */}
+      {tienes && soloLectura && (
+        <span className="absolute top-1.5 left-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-campo-500 text-white shadow border border-white/30 pointer-events-none z-10">
           <Check className="h-4 w-4" strokeWidth={3} />
         </span>
       )}
 
-      {repetidas && (
+      {/* Esquina superior derecha en modo solo lectura: indicador estatico de
+          cantidad (cuando hay repetidas). En modo editable la pildora del
+          stepper de mas abajo asume esta posicion y muestra el contador. */}
+      {repetidas && soloLectura && (
         <motion.span
           key={cantidad}
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-          className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-trofeo-300 text-carbon px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow border border-white/30 pointer-events-none"
+          className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-trofeo-300 text-carbon px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow border border-white/30 pointer-events-none z-10"
         >
           x{cantidad}
         </motion.span>
       )}
 
-      {!soloLectura && tienes && (
+      {/* Contador grande momentaneo: confirma visualmente cuantas tienes ahora. */}
+      <AnimatePresence>
+        {accionReciente && (
+          <motion.div
+            key={`big-${accionReciente.expiraEn}-${accionReciente.cantidadNueva}`}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 1.2, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+            className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+          >
+            <div className="flex flex-col items-center gap-0.5">
+              <span
+                className={cn(
+                  'titulo-display text-5xl drop-shadow-lg',
+                  accionReciente.cantidadNueva === 0
+                    ? 'text-rojo'
+                    : accionReciente.cantidadNueva > 1
+                      ? 'text-trofeo-200'
+                      : 'text-white',
+                )}
+              >
+                {accionReciente.cantidadNueva > 0 ? `x${accionReciente.cantidadNueva}` : '0'}
+              </span>
+              <span className="text-[10px] uppercase tracking-wider font-bold text-white/80 bg-carbon/70 px-2 py-0.5 rounded-full">
+                {accionReciente.cantidadNueva === 0
+                  ? 'Marcada como falta'
+                  : accionReciente.cantidadNueva === 1
+                    ? '¡La tienes!'
+                    : `Tienes ${accionReciente.cantidadNueva}`}
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pildora de acciones en esquina superior derecha. Combina los botones
+          - / + con el contador (cuando hay repetidas), libera el centro de la
+          tarjeta y no tapa la franja del nombre en la parte de abajo. Cuando
+          hay un cambio reciente, la misma pildora se transforma en boton
+          "Deshacer" durante unos segundos. */}
+      {!soloLectura && (mostrarDeshacer || tienes) && (
         <div
-          data-stepper="true"
-          className="absolute inset-x-0 bottom-0 z-20 flex items-stretch justify-between gap-1 p-1.5 bg-gradient-to-t from-carbon/85 via-carbon/55 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 z-30"
+          data-stepper={mostrarDeshacer ? undefined : 'true'}
         >
-          <button
-            type="button"
-            data-stepper="true"
-            onPointerDown={handleStepperPointerDown(restar)}
-            onPointerUp={(e) => {
-              e.stopPropagation()
-              detenerRepeticion()
-            }}
-            onPointerLeave={detenerRepeticion}
-            onPointerCancel={detenerRepeticion}
-            onClick={(e) => {
-              e.stopPropagation()
-              restar()
-            }}
-            disabled={cantidad <= 0}
-            aria-label={`Restar una de ${estampa.nombre}`}
-            className={cn(
-              'tap-target inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-full',
-              'bg-carbon/85 border border-white/25 text-crema shadow',
-              'active:scale-90 active:bg-rojo/80 transition-transform',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
-            )}
-          >
-            <Minus className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={3} />
-          </button>
-          <button
-            type="button"
-            data-stepper="true"
-            onPointerDown={handleStepperPointerDown(sumar)}
-            onPointerUp={(e) => {
-              e.stopPropagation()
-              detenerRepeticion()
-            }}
-            onPointerLeave={detenerRepeticion}
-            onPointerCancel={detenerRepeticion}
-            onClick={(e) => {
-              e.stopPropagation()
-              sumar()
-            }}
-            aria-label={`Sumar una de ${estampa.nombre}`}
-            className={cn(
-              'tap-target inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-full',
-              'bg-trofeo-300 text-carbon border border-white/40 shadow',
-              'active:scale-90 active:bg-trofeo-400 transition-transform',
-            )}
-          >
-            <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={3} />
-          </button>
+          {mostrarDeshacer ? (
+            <button
+              type="button"
+              data-deshacer="true"
+              onClick={(e) => {
+                e.stopPropagation()
+                deshacer()
+              }}
+              aria-label="Deshacer el ultimo cambio"
+              className={cn(
+                'tap-target inline-flex items-center gap-1 rounded-full',
+                'bg-trofeo-300 text-carbon border border-white/40 shadow',
+                'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider',
+                'active:scale-95 transition-transform',
+              )}
+            >
+              <RotateCcw className="h-3 w-3" strokeWidth={3} />
+              Deshacer
+            </button>
+          ) : (
+            <div
+              className={cn(
+                'inline-flex items-center rounded-full',
+                'bg-carbon/90 backdrop-blur-sm border border-white/25 shadow-md',
+                'p-0.5 gap-0.5',
+              )}
+            >
+              <button
+                type="button"
+                data-stepper="true"
+                onPointerDown={handleStepperPointerDown(restar)}
+                onPointerUp={(e) => {
+                  e.stopPropagation()
+                  detenerRepeticion()
+                }}
+                onPointerLeave={detenerRepeticion}
+                onPointerCancel={detenerRepeticion}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  restar()
+                }}
+                disabled={cantidad <= 0}
+                aria-label={`Restar una de ${estampa.nombre}`}
+                className={cn(
+                  'tap-target inline-flex h-7 w-7 items-center justify-center rounded-full',
+                  'bg-white/10 text-crema',
+                  'active:scale-90 active:bg-rojo/80 transition-transform',
+                  'disabled:opacity-40 disabled:cursor-not-allowed',
+                )}
+              >
+                <Minus className="h-3.5 w-3.5" strokeWidth={3} />
+              </button>
+              {repetidas && (
+                <motion.span
+                  key={cantidad}
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                  className="px-1.5 min-w-[1.25rem] text-center text-[11px] font-bold text-trofeo-300 select-none pointer-events-none"
+                >
+                  x{cantidad}
+                </motion.span>
+              )}
+              <button
+                type="button"
+                data-stepper="true"
+                onPointerDown={handleStepperPointerDown(sumar)}
+                onPointerUp={(e) => {
+                  e.stopPropagation()
+                  detenerRepeticion()
+                }}
+                onPointerLeave={detenerRepeticion}
+                onPointerCancel={detenerRepeticion}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  sumar()
+                }}
+                aria-label={`Sumar una de ${estampa.nombre}`}
+                className={cn(
+                  'tap-target inline-flex h-7 w-7 items-center justify-center rounded-full',
+                  'bg-trofeo-300 text-carbon border border-white/30',
+                  'active:scale-90 active:bg-trofeo-400 transition-transform',
+                )}
+              >
+                <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

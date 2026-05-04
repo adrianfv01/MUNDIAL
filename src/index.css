@@ -105,8 +105,71 @@
     animation: shine 2.4s linear infinite;
   }
 
+  /* Borde arcoiris animado tipo "carrusel" estilo Razer Chroma para
+     estampas especiales. Tecnica compatible con todos los navegadores
+     modernos: un pseudo-elemento mas grande que el contenedor rota con
+     transform: rotate() y la mask-composite del padre recorta solo el
+     anillo del borde, asi se ve un arcoiris dando vueltas en loop. */
+  .foil-border {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    overflow: hidden;
+    pointer-events: none;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .foil-border::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Cuadrado lo bastante grande para que en cualquier rotacion siempre
+       cubra la diagonal de la tarjeta padre, sin importar si la tarjeta
+       es muy ancha (como el card de "Trofeo, mascotas y sedes") o muy
+       alta. Usar vmax garantiza un tamano absoluto independiente de las
+       proporciones del padre. */
+    width: 200vmax;
+    height: 200vmax;
+    background: conic-gradient(
+      from 0deg,
+      #ff3366,
+      #ff7a00,
+      #ffd24c,
+      #4ade80,
+      #22d3ee,
+      #6366f1,
+      #c026d3,
+      #ff3366
+    );
+    transform: translate(-50%, -50%) rotate(0deg);
+    transform-origin: center;
+    animation: foil-rotate 1.6s linear infinite;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .foil-border::before {
+      animation: none;
+    }
+  }
+
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@keyframes foil-rotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 

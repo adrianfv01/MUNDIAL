@@ -176,7 +176,69 @@ export function useColeccion(uid: string | undefined) {
     [aplicarDelta, coleccionRemota],
   )
 
-  return { coleccion, cargando, actualizar, incrementar, decrementar }
+  const aplicarIntercambio = useCallback(
+    async ({
+      entregas,
+      recibes,
+      amigoUid,
+    }: {
+      entregas: string[]
+      recibes: string[]
+      amigoUid: string
+    }) => {
+      if (!uid) {
+        return { miOk: false, amigoOk: false, miError: 'Sin sesion', amigoError: null }
+      }
+
+      // Lado propio: usamos aplicarDelta para mantener feedback optimista.
+      let miError: string | null = null
+      try {
+        const propios: Promise<unknown>[] = []
+        for (const id of entregas) propios.push(aplicarDelta(id, -1))
+        for (const id of recibes) propios.push(aplicarDelta(id, +1))
+        await Promise.all(propios)
+      } catch (err) {
+        miError = err instanceof Error ? err.message : 'Error al actualizar tu coleccion'
+      }
+
+      // Lado del amigo: escritura directa por incremento. Necesita reglas
+      // que permitan a un amigo aplicar +-1 a la cantidad.
+      let amigoError: string | null = null
+      try {
+        await Promise.all([
+          ...entregas.map((id) =>
+            setDoc(
+              doc(db, 'usuarios', amigoUid, 'coleccion', id),
+              { cantidad: fsIncrement(1), updatedAt: serverTimestamp() },
+              { merge: true },
+            ),
+          ),
+          ...recibes.map((id) =>
+            setDoc(
+              doc(db, 'usuarios', amigoUid, 'coleccion', id),
+              { cantidad: fsIncrement(-1), updatedAt: serverTimestamp() },
+              { merge: true },
+            ),
+          ),
+        ])
+      } catch (err) {
+        amigoError =
+          err instanceof Error
+            ? err.message
+            : 'No se pudo actualizar la coleccion del amigo'
+      }
+
+      return {
+        miOk: miError === null,
+        amigoOk: amigoError === null,
+        miError,
+        amigoError,
+      }
+    },
+    [aplicarDelta, uid],
+  )
+
+  return { coleccion, cargando, actualizar, incrementar, decrementar, aplicarIntercambio }
 }
 
 export function calcularResumen(coleccion: Coleccion, estampas: Estampa[]): ResumenColeccion {

@@ -57,10 +57,26 @@ service cloud.firestore {
 
     match /usuarios/{uid}/coleccion/{stickerId} {
       allow read: if esDueno(uid) || sonAmigos(uid);
-      allow create, update: if esDueno(uid)
-                            && request.resource.data.cantidad is number
-                            && request.resource.data.cantidad >= 0
-                            && request.resource.data.cantidad <= 999;
+
+      // Cambio de un amigo: solo permitido si el delta absoluto es 1.
+      // Esto restringe el dano potencial a una unidad por click.
+      function deltaAmigoValido() {
+        let nueva = request.resource.data.cantidad;
+        let anterior = resource == null ? 0 : resource.data.cantidad;
+        return nueva is number
+               && nueva >= 0
+               && nueva <= 999
+               && (nueva == anterior + 1 || nueva == anterior - 1);
+      }
+
+      allow create, update: if (
+        esDueno(uid)
+        && request.resource.data.cantidad is number
+        && request.resource.data.cantidad >= 0
+        && request.resource.data.cantidad <= 999
+      ) || (
+        sonAmigos(uid) && deltaAmigoValido()
+      );
       allow delete: if esDueno(uid);
     }
 

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Star, X } from 'lucide-react'
-import { Modal } from '@/components/ui/Modal'
+import { Star } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion } from '@/hooks/useColeccion'
@@ -10,8 +9,8 @@ import { cn } from '@/lib/utils'
 import type { Equipo, Estampa } from '@/lib/types'
 
 interface BuscarEstampasProps {
-  abierto: boolean
-  onCerrar: () => void
+  valor: string
+  onIrResultado: () => void
 }
 
 type Filtro = 'todas' | 'pegadas' | 'faltan' | 'repes'
@@ -24,22 +23,18 @@ interface Resultado {
 
 const LIMITE = 60
 
-export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
+const filtros: { id: Filtro; label: string }[] = [
+  { id: 'todas', label: 'Todas' },
+  { id: 'pegadas', label: 'Pegadas' },
+  { id: 'faltan', label: 'Faltan' },
+  { id: 'repes', label: 'Repes' },
+]
+
+export function BuscarEstampas({ valor, onIrResultado }: BuscarEstampasProps) {
   const { user } = useAuth()
   const { equipos, estampas } = useCatalogo()
   const { coleccion } = useColeccion(user?.uid)
-  const [valor, setValor] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todas')
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (abierto) {
-      setValor('')
-      setFiltro('todas')
-      const t = setTimeout(() => inputRef.current?.focus(), 80)
-      return () => clearTimeout(t)
-    }
-  }, [abierto])
 
   const equiposPorCodigo = useMemo(() => {
     const mapa = new Map<string, Equipo>()
@@ -94,88 +89,65 @@ export function BuscarEstampas({ abierto, onCerrar }: BuscarEstampasProps) {
 
   const visibles = resultados.slice(0, LIMITE)
   const restantes = resultados.length - visibles.length
-
-  const filtros: { id: Filtro; label: string }[] = [
-    { id: 'todas', label: 'Todas' },
-    { id: 'pegadas', label: 'Pegadas' },
-    { id: 'faltan', label: 'Faltan' },
-    { id: 'repes', label: 'Repes' },
-  ]
+  const sinTexto = valor.trim().length === 0
 
   return (
-    <Modal abierto={abierto} onCerrar={onCerrar} titulo="Buscar estampa">
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-crema/50" />
-          <input
-            ref={inputRef}
-            type="search"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            placeholder="Número, jugador, equipo o país"
-            autoCapitalize="none"
-            autoCorrect="off"
-            inputMode="search"
-            className="w-full h-12 rounded-xl border border-white/15 bg-white/5 pl-9 pr-10 text-sm text-crema placeholder:text-crema/40 focus:outline-none focus:border-trofeo-300/50 focus:ring-2 focus:ring-trofeo-300/30"
-          />
-          {valor && (
-            <button
-              type="button"
-              onClick={() => setValor('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/10 tap-target"
-              aria-label="Limpiar búsqueda"
-            >
-              <X className="h-4 w-4 text-crema/60" />
-            </button>
+    <div
+      className="fixed inset-x-0 top-14 lg:top-16 bottom-0 z-20 bg-carbon/95 backdrop-blur-md flex flex-col"
+      role="dialog"
+      aria-label="Resultados de búsqueda"
+    >
+      <div className="mx-auto w-full max-w-3xl lg:max-w-6xl px-3 sm:px-4 lg:px-6 flex flex-col flex-1 min-h-0">
+        <div className="sticky top-0 z-10 bg-carbon/95 backdrop-blur-md pt-3 pb-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {filtros.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFiltro(f.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider tap-target border transition shrink-0',
+                  filtro === f.id
+                    ? 'bg-trofeo-300 text-carbon border-trofeo-300'
+                    : 'bg-white/5 text-crema/70 border-white/10 hover:text-crema',
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 sm:pb-6">
+          {sinTexto && filtro === 'todas' ? (
+            <div className="text-center py-10 text-sm text-crema/50 px-4">
+              Escribe un número, jugador, equipo o país.
+            </div>
+          ) : visibles.length === 0 ? (
+            <div className="text-center py-10 text-sm text-crema/50 px-4">
+              Sin coincidencias. Prueba con otro nombre o número.
+            </div>
+          ) : (
+            <ul className="space-y-1.5 pt-1">
+              {visibles.map(({ estampa, equipo, cantidad }) => (
+                <ItemResultado
+                  key={estampa.id}
+                  estampa={estampa}
+                  equipo={equipo}
+                  cantidad={cantidad}
+                  onIr={onIrResultado}
+                />
+              ))}
+              {restantes > 0 && (
+                <li className="text-center text-[11px] text-crema/40 py-3">
+                  Refina tu búsqueda para ver {restantes} resultados más.
+                </li>
+              )}
+            </ul>
           )}
         </div>
-
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {filtros.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFiltro(f.id)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider tap-target border transition shrink-0',
-                filtro === f.id
-                  ? 'bg-trofeo-300 text-carbon border-trofeo-300'
-                  : 'bg-white/5 text-crema/70 border-white/10 hover:text-crema',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {valor.length === 0 && filtro === 'todas' ? (
-          <div className="text-center py-6 text-sm text-crema/50">
-            Escribe el número, el nombre del jugador o el país que buscas.
-          </div>
-        ) : visibles.length === 0 ? (
-          <div className="text-center py-6 text-sm text-crema/50">
-            Sin coincidencias. Prueba con otro nombre o número.
-          </div>
-        ) : (
-          <ul className="space-y-1.5 max-h-[55vh] overflow-y-auto -mx-1 px-1">
-            {visibles.map(({ estampa, equipo, cantidad }) => (
-              <ItemResultado
-                key={estampa.id}
-                estampa={estampa}
-                equipo={equipo}
-                cantidad={cantidad}
-                onIr={onCerrar}
-              />
-            ))}
-            {restantes > 0 && (
-              <li className="text-center text-[11px] text-crema/40 py-2">
-                Refina tu búsqueda para ver {restantes} resultados más
-              </li>
-            )}
-          </ul>
-        )}
       </div>
-    </Modal>
+    </div>
   )
 }
 

@@ -217,7 +217,9 @@ export function EquipoPage() {
       )}
 
       <p className="text-center text-[11px] text-crema/40 pt-4">
-        Toca la estampa para sumar. Usa los botones &minus; / &plus; para ajustar repes.
+        Toca una tarjeta gris para marcarla. Cuando ya la tienes, usa los botones &minus; / &plus;
+        para ajustar repes. Tras cada cambio aparece un botón &laquo;Deshacer&raquo; por unos
+        segundos.
       </p>
     </div>
   )

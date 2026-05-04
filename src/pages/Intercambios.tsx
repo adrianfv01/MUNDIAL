@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeftRight,
+  Check,
+  CheckCheck,
+  CheckSquare,
   ChevronDown,
   Copy,
   Filter,
@@ -10,8 +13,10 @@ import {
   Search,
   Send,
   Sparkles,
+  Square,
   Trophy,
   Users,
+  X,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useAmigos } from '@/hooks/useAmigos'
@@ -25,6 +30,19 @@ import { MiniSticker } from '@/components/estampas/MiniSticker'
 import { cn } from '@/lib/utils'
 import type { Coleccion, Equipo, Estampa, MatchIntercambio } from '@/lib/types'
 
+type ResultadoIntercambio = {
+  miOk: boolean
+  amigoOk: boolean
+  miError: string | null
+  amigoError: string | null
+}
+
+type AplicarIntercambioFn = (args: {
+  entregas: string[]
+  recibes: string[]
+  amigoUid: string
+}) => Promise<ResultadoIntercambio>
+
 type Filtro = 'todos' | 'dobles'
 type Vista = 'pares' | 'doy' | 'pido'
 
@@ -32,7 +50,11 @@ export function IntercambiosPage() {
   const { user } = useAuth()
   const { perfiles, cargando: cargAm } = useAmigos(user?.uid)
   const { equipos, estampas, cargando: cargCat } = useCatalogo()
-  const { coleccion: miColeccion, cargando: cargMia } = useColeccion(user?.uid)
+  const {
+    coleccion: miColeccion,
+    cargando: cargMia,
+    aplicarIntercambio,
+  } = useColeccion(user?.uid)
 
   const [coleccionesAmigos, setColeccionesAmigos] = useState<Record<string, Coleccion>>({})
   const [cargandoAmigos, setCargandoAmigos] = useState(false)
@@ -204,6 +226,7 @@ export function IntercambiosPage() {
                   onToggle={() =>
                     setExpandido((prev) => (prev === m.amigoUid ? null : m.amigoUid))
                   }
+                  aplicarIntercambio={aplicarIntercambio}
                 />
               ))}
             </div>
@@ -365,11 +388,13 @@ function MatchAmigoCard({
   equipos,
   expandido,
   onToggle,
+  aplicarIntercambio,
 }: {
   match: MatchIntercambio
   equipos: Equipo[]
   expandido: boolean
   onToggle: () => void
+  aplicarIntercambio: AplicarIntercambioFn
 }) {
   const equiposPorCodigo = useMemo(() => {
     const m: Record<string, Equipo> = {}
@@ -476,6 +501,7 @@ function MatchAmigoCard({
             <ContenidoExpandido
               match={match}
               equiposPorCodigo={equiposPorCodigo}
+              aplicarIntercambio={aplicarIntercambio}
             />
           </motion.div>
         )}
@@ -570,14 +596,119 @@ function FilaBanderas({
 function ContenidoExpandido({
   match,
   equiposPorCodigo,
+  aplicarIntercambio,
 }: {
   match: MatchIntercambio
   equiposPorCodigo: Record<string, Equipo>
+  aplicarIntercambio: AplicarIntercambioFn
 }) {
   const [vista, setVista] = useState<Vista>(match.esDoble ? 'pares' : 'doy')
   const [copiado, setCopiado] = useState(false)
+  const [modoSeleccion, setModoSeleccion] = useState(false)
+  const [doySel, setDoySel] = useState<Set<string>>(new Set())
+  const [pidoSel, setPidoSel] = useState<Set<string>>(new Set())
+  const [aplicando, setAplicando] = useState(false)
+  const [aviso, setAviso] = useState<{
+    tipo: 'exito' | 'parcial' | 'error'
+    mensaje: string
+  } | null>(null)
 
   const totalPares = Math.min(match.tuOfreces.length, match.elOfrece.length)
+
+  useEffect(() => {
+    if (!aviso) return
+    const t = window.setTimeout(() => setAviso(null), 5000)
+    return () => window.clearTimeout(t)
+  }, [aviso])
+
+  const limpiarSeleccion = () => {
+    setDoySel(new Set())
+    setPidoSel(new Set())
+  }
+
+  const cancelarSeleccion = () => {
+    setModoSeleccion(false)
+    limpiarSeleccion()
+  }
+
+  const toggleDoy = (id: string) => {
+    setDoySel((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const togglePido = (id: string) => {
+    setPidoSel((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const togglePar = (idMia: string, idSuya: string) => {
+    const ambasMarcadas = doySel.has(idMia) && pidoSel.has(idSuya)
+    setDoySel((prev) => {
+      const next = new Set(prev)
+      if (ambasMarcadas) next.delete(idMia)
+      else next.add(idMia)
+      return next
+    })
+    setPidoSel((prev) => {
+      const next = new Set(prev)
+      if (ambasMarcadas) next.delete(idSuya)
+      else next.add(idSuya)
+      return next
+    })
+  }
+
+  const marcarTodosLosPares = () => {
+    const totalPares = Math.min(match.tuOfreces.length, match.elOfrece.length)
+    const nuevoDoy = new Set<string>()
+    const nuevoPido = new Set<string>()
+    for (let i = 0; i < totalPares; i++) {
+      nuevoDoy.add(match.tuOfreces[i].id)
+      nuevoPido.add(match.elOfrece[i].id)
+    }
+    setDoySel(nuevoDoy)
+    setPidoSel(nuevoPido)
+  }
+
+  const confirmarIntercambio = async () => {
+    if (aplicando) return
+    if (doySel.size === 0 && pidoSel.size === 0) return
+    setAplicando(true)
+    try {
+      const resultado = await aplicarIntercambio({
+        entregas: [...doySel],
+        recibes: [...pidoSel],
+        amigoUid: match.amigoUid,
+      })
+      if (resultado.miOk && resultado.amigoOk) {
+        setAviso({
+          tipo: 'exito',
+          mensaje: 'Intercambio aplicado en ambas colecciones.',
+        })
+      } else if (resultado.miOk && !resultado.amigoOk) {
+        setAviso({
+          tipo: 'parcial',
+          mensaje:
+            'Tu colección se actualizó. La de tu amigo se actualizará cuando él abra la app.',
+        })
+      } else {
+        setAviso({
+          tipo: 'error',
+          mensaje: resultado.miError ?? 'No se pudo aplicar el intercambio.',
+        })
+      }
+      cancelarSeleccion()
+    } finally {
+      setAplicando(false)
+    }
+  }
 
   const generarMensaje = () => {
     const lineas: string[] = []
@@ -622,6 +753,8 @@ function ContenidoExpandido({
     }
   }
 
+  const hayAlgoSeleccionado = doySel.size > 0 || pidoSel.size > 0
+
   return (
     <div className="border-t border-white/5 px-3 sm:px-4 pb-4 pt-3 space-y-3">
       <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10">
@@ -646,8 +779,25 @@ function ContenidoExpandido({
         />
       </div>
 
+      <BarraModoSeleccion
+        modoSeleccion={modoSeleccion}
+        onActivar={() => setModoSeleccion(true)}
+        onCancelar={cancelarSeleccion}
+        onMarcarPares={marcarTodosLosPares}
+        onLimpiar={limpiarSeleccion}
+        totalPares={totalPares}
+        totalSeleccionados={doySel.size + pidoSel.size}
+      />
+
       {vista === 'pares' && (
-        <PanelPares match={match} equiposPorCodigo={equiposPorCodigo} />
+        <PanelPares
+          match={match}
+          equiposPorCodigo={equiposPorCodigo}
+          modoSeleccion={modoSeleccion}
+          doySel={doySel}
+          pidoSel={pidoSel}
+          onTogglePar={togglePar}
+        />
       )}
       {vista === 'doy' && (
         <PanelLista
@@ -655,6 +805,9 @@ function ContenidoExpandido({
           equiposPorCodigo={equiposPorCodigo}
           acento="campo"
           vacioMsg="No tienes repetidas que él necesite. Sigue pegando estampas."
+          modoSeleccion={modoSeleccion}
+          seleccionados={doySel}
+          onToggle={toggleDoy}
         />
       )}
       {vista === 'pido' && (
@@ -663,8 +816,73 @@ function ContenidoExpandido({
           equiposPorCodigo={equiposPorCodigo}
           acento="trofeo"
           vacioMsg="No tiene repetidas que te falten ahora mismo."
+          modoSeleccion={modoSeleccion}
+          seleccionados={pidoSel}
+          onToggle={togglePido}
         />
       )}
+
+      <AnimatePresence>
+        {aviso && (
+          <motion.div
+            key={aviso.mensaje}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className={cn(
+              'flex items-start gap-2 rounded-xl border px-3 py-2 text-xs',
+              aviso.tipo === 'exito' && 'border-campo-300/40 bg-campo-500/15 text-campo-100',
+              aviso.tipo === 'parcial' &&
+                'border-trofeo-300/40 bg-trofeo-300/10 text-trofeo-100',
+              aviso.tipo === 'error' && 'border-rojo/40 bg-rojo/15 text-crema',
+            )}
+          >
+            <Check className="h-4 w-4 shrink-0 mt-0.5" strokeWidth={3} />
+            <p className="leading-snug">{aviso.mensaje}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {modoSeleccion && hayAlgoSeleccionado && (
+          <motion.div
+            key="footer-confirmar"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="sticky bottom-2 z-10 rounded-2xl border border-trofeo-300/50 bg-carbon/95 backdrop-blur-md p-3 shadow-foil"
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-[11px] uppercase tracking-wider font-bold text-crema/80">
+                <span className="text-campo-200">Entregas {doySel.size}</span>
+                <span className="mx-1.5 text-crema/40">·</span>
+                <span className="text-trofeo-200">Recibes {pidoSel.size}</span>
+              </div>
+              <button
+                type="button"
+                onClick={confirmarIntercambio}
+                disabled={aplicando}
+                className={cn(
+                  'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl text-xs font-bold uppercase tracking-wider tap-target shadow-estampa transition',
+                  'bg-trofeo-300 text-carbon hover:bg-trofeo-200 active:scale-95',
+                  aplicando && 'opacity-70 cursor-wait',
+                )}
+              >
+                {aplicando ? (
+                  <Spinner size={16} />
+                ) : (
+                  <CheckCheck className="h-4 w-4" strokeWidth={3} />
+                )}
+                {aplicando ? 'Aplicando' : 'Confirmar intercambio'}
+              </button>
+            </div>
+            <p className="text-[10px] text-crema/50 mt-2 leading-snug">
+              Restará 1 a cada estampa que entregues y sumará 1 a cada una que recibas, en
+              tu colección y en la de @{match.amigoUsername}.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
@@ -689,6 +907,80 @@ function ContenidoExpandido({
         >
           Ver álbum
         </Link>
+      </div>
+    </div>
+  )
+}
+
+function BarraModoSeleccion({
+  modoSeleccion,
+  onActivar,
+  onCancelar,
+  onMarcarPares,
+  onLimpiar,
+  totalPares,
+  totalSeleccionados,
+}: {
+  modoSeleccion: boolean
+  onActivar: () => void
+  onCancelar: () => void
+  onMarcarPares: () => void
+  onLimpiar: () => void
+  totalPares: number
+  totalSeleccionados: number
+}) {
+  if (!modoSeleccion) {
+    return (
+      <button
+        type="button"
+        onClick={onActivar}
+        className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl border border-trofeo-300/40 bg-trofeo-300/10 hover:bg-trofeo-300/20 text-trofeo-200 text-xs font-bold uppercase tracking-wider tap-target transition"
+      >
+        <CheckSquare className="h-4 w-4" />
+        Marcar intercambio
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-trofeo-300/40 bg-trofeo-300/10 p-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] uppercase tracking-wider font-bold text-trofeo-100">
+          Modo selección activo
+        </p>
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-crema/80 text-[10px] font-bold uppercase tracking-wider tap-target"
+        >
+          <X className="h-3 w-3" />
+          Cancelar
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {totalPares > 0 && (
+          <button
+            type="button"
+            onClick={onMarcarPares}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-crema text-[10px] font-bold uppercase tracking-wider tap-target"
+          >
+            <CheckCheck className="h-3 w-3" />
+            Marcar {totalPares} pares
+          </button>
+        )}
+        {totalSeleccionados > 0 && (
+          <button
+            type="button"
+            onClick={onLimpiar}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-crema/70 text-[10px] font-bold uppercase tracking-wider tap-target"
+          >
+            <X className="h-3 w-3" />
+            Limpiar ({totalSeleccionados})
+          </button>
+        )}
+        <span className="ml-auto inline-flex items-center text-[10px] uppercase tracking-wider text-crema/55">
+          Toca cada estampa para marcarla
+        </span>
       </div>
     </div>
   )
@@ -728,9 +1020,17 @@ function BotonVista({
 function PanelPares({
   match,
   equiposPorCodigo,
+  modoSeleccion,
+  doySel,
+  pidoSel,
+  onTogglePar,
 }: {
   match: MatchIntercambio
   equiposPorCodigo: Record<string, Equipo>
+  modoSeleccion: boolean
+  doySel: Set<string>
+  pidoSel: Set<string>
+  onTogglePar: (idMia: string, idSuya: string) => void
 }) {
   const total = Math.min(match.tuOfreces.length, match.elOfrece.length)
   const pares = Array.from({ length: total }, (_, i) => ({
@@ -757,11 +1057,10 @@ function PanelPares({
         {pares.map(({ mia, suya }, idx) => {
           const eqMia = equiposPorCodigo[mia.equipoId]
           const eqSuya = equiposPorCodigo[suya.equipoId]
-          return (
-            <div
-              key={`${mia.id}-${suya.id}`}
-              className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5"
-            >
+          const parMarcado = doySel.has(mia.id) && pidoSel.has(suya.id)
+
+          const filaInner = (
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 w-full">
               <MiniSticker
                 estampa={mia}
                 bandera={eqMia?.bandera}
@@ -784,6 +1083,43 @@ function PanelPares({
               />
             </div>
           )
+
+          if (!modoSeleccion) {
+            return (
+              <div key={`${mia.id}-${suya.id}`}>{filaInner}</div>
+            )
+          }
+
+          return (
+            <button
+              key={`${mia.id}-${suya.id}`}
+              type="button"
+              onClick={() => onTogglePar(mia.id, suya.id)}
+              aria-pressed={parMarcado}
+              className={cn(
+                'flex items-center gap-2 w-full text-left rounded-xl p-1.5 transition tap-target',
+                parMarcado
+                  ? 'bg-trofeo-300/15 ring-2 ring-trofeo-300/60'
+                  : 'hover:bg-white/5 ring-1 ring-white/5',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-flex h-6 w-6 items-center justify-center rounded-md border shrink-0 transition',
+                  parMarcado
+                    ? 'bg-trofeo-300 border-trofeo-300 text-carbon'
+                    : 'border-white/30 text-crema/40',
+                )}
+              >
+                {parMarcado ? (
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                ) : (
+                  <Square className="h-3.5 w-3.5" />
+                )}
+              </span>
+              {filaInner}
+            </button>
+          )
         })}
       </div>
 
@@ -803,11 +1139,17 @@ function PanelLista({
   equiposPorCodigo,
   acento,
   vacioMsg,
+  modoSeleccion,
+  seleccionados,
+  onToggle,
 }: {
   estampas: Estampa[]
   equiposPorCodigo: Record<string, Equipo>
   acento: 'campo' | 'trofeo'
   vacioMsg: string
+  modoSeleccion: boolean
+  seleccionados: Set<string>
+  onToggle: (id: string) => void
 }) {
   const agrupadas = useMemo(() => {
     const mapa = new Map<string, Estampa[]>()
@@ -822,6 +1164,15 @@ function PanelLista({
   if (estampas.length === 0) {
     return <p className="text-sm text-crema/55 text-center py-4">{vacioMsg}</p>
   }
+
+  const ringActivo =
+    acento === 'campo' ? 'ring-campo-300/60' : 'ring-trofeo-300/60'
+  const fondoActivo =
+    acento === 'campo' ? 'bg-campo-500/15' : 'bg-trofeo-300/15'
+  const checkActivo =
+    acento === 'campo'
+      ? 'bg-campo-500 border-campo-500 text-white'
+      : 'bg-trofeo-300 border-trofeo-300 text-carbon'
 
   return (
     <div className="space-y-3">
@@ -845,16 +1196,51 @@ function PanelLista({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {lista
                 .sort((a, b) => a.numero - b.numero)
-                .map((e) => (
-                  <MiniSticker
-                    key={e.id}
-                    estampa={e}
-                    bandera={eq?.bandera}
-                    colorPrimario={eq?.colorPrimario}
-                    colorSecundario={eq?.colorSecundario}
-                    acento={acento}
-                  />
-                ))}
+                .map((e) => {
+                  const item = (
+                    <MiniSticker
+                      estampa={e}
+                      bandera={eq?.bandera}
+                      colorPrimario={eq?.colorPrimario}
+                      colorSecundario={eq?.colorSecundario}
+                      acento={acento}
+                    />
+                  )
+
+                  if (!modoSeleccion) {
+                    return <div key={e.id}>{item}</div>
+                  }
+
+                  const marcada = seleccionados.has(e.id)
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => onToggle(e.id)}
+                      aria-pressed={marcada}
+                      className={cn(
+                        'flex items-center gap-2 w-full text-left rounded-xl p-1 transition tap-target',
+                        marcada
+                          ? `${fondoActivo} ring-2 ${ringActivo}`
+                          : 'hover:bg-white/5 ring-1 ring-white/5',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'inline-flex h-6 w-6 items-center justify-center rounded-md border shrink-0 transition',
+                          marcada ? checkActivo : 'border-white/30 text-crema/40',
+                        )}
+                      >
+                        {marcada ? (
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        ) : (
+                          <Square className="h-3.5 w-3.5" />
+                        )}
+                      </span>
+                      <div className="flex-1 min-w-0">{item}</div>
+                    </button>
+                  )
+                })}
             </div>
           </div>
         )
