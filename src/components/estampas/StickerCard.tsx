@@ -6,10 +6,10 @@ import {
   useEffect,
   useRef,
   useState,
-  type MouseEvent,
   type PointerEvent,
 } from 'react'
 import { cn } from '@/lib/utils'
+import { useTapNoScroll } from '@/lib/useTapNoScroll'
 import type { Estampa } from '@/lib/types'
 
 interface StickerCardProps {
@@ -179,15 +179,20 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
   //  - Si NO tienes la estampa, suma 1 (caso seguro: la marca como "tengo").
   //  - Si ya la tienes, ignoramos el tap para evitar +1 por accidente al hacer
   //    scroll. En ese caso solo los botones - / + ajustan la cantidad.
+  //  - Usamos useTapNoScroll: cancela el "tap" si el dedo se movio mas de 10px
+  //    o duro mas de 500ms, asi un scroll por encima de la tarjeta no la marca.
   const tapEnTarjetaSuma = !tienes
-  const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (soloLectura) return
-    const target = e.target as HTMLElement
-    if (target.closest('[data-stepper="true"]')) return
-    if (target.closest('[data-deshacer="true"]')) return
-    if (!tapEnTarjetaSuma) return
-    sumar()
-  }
+  const onTap = useCallback(
+    (e: PointerEvent<HTMLDivElement>) => {
+      if (soloLectura || !tapEnTarjetaSuma) return
+      const target = e.target as HTMLElement
+      if (target.closest('[data-stepper="true"]')) return
+      if (target.closest('[data-deshacer="true"]')) return
+      sumar()
+    },
+    [soloLectura, tapEnTarjetaSuma, sumar],
+  )
+  const tapHandlers = useTapNoScroll<HTMLDivElement>(onTap)
 
   const interactivo = !soloLectura && (tapEnTarjetaSuma || tienes)
   const mostrarDeshacer = !soloLectura && accionReciente !== null
@@ -209,7 +214,10 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
           : undefined
       }
       transition={destacar ? { duration: 1.6, repeat: 1, ease: 'easeInOut' } : undefined}
-      onClick={soloLectura ? undefined : handleCardClick}
+      onPointerDown={soloLectura || !tapEnTarjetaSuma ? undefined : tapHandlers.onPointerDown}
+      onPointerUp={soloLectura || !tapEnTarjetaSuma ? undefined : tapHandlers.onPointerUp}
+      onPointerCancel={soloLectura || !tapEnTarjetaSuma ? undefined : tapHandlers.onPointerCancel}
+      onPointerLeave={soloLectura || !tapEnTarjetaSuma ? undefined : tapHandlers.onPointerLeave}
       onContextMenu={(e) => e.preventDefault()}
       role={tapEnTarjetaSuma ? 'button' : undefined}
       tabIndex={interactivo ? 0 : -1}
@@ -227,7 +235,11 @@ export const StickerCard = forwardRef<HTMLDivElement, StickerCardProps>(function
         }
       }}
       className={cn(
-        'group relative overflow-hidden rounded-xl border text-left tap-target transition aspect-[3/4] flex flex-col select-none',
+        // `isolate` crea un contexto de apilamiento propio para que los z-30
+        // internos (stepper, contador, +/-1) NO escapen al documento y se
+        // dibujen por encima de overlays como el panel de busqueda o el menu
+        // inferior.
+        'group relative isolate overflow-hidden rounded-xl border text-left tap-target transition aspect-[3/4] flex flex-col select-none',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-trofeo-300/70',
         tienes
           ? 'border-trofeo-300/60 shadow-estampa'

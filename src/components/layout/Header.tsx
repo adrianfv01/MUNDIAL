@@ -131,8 +131,8 @@ export function Header() {
               value={valor}
               onChange={(e) => setValor(e.target.value)}
               onFocus={() => setMostrar(true)}
-              placeholder="Buscar estampa, jugador o equipo..."
-              autoCapitalize="none"
+              placeholder="BUSCAR ESTAMPA, JUGADOR O EQUIPO..."
+              autoCapitalize="characters"
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
@@ -141,8 +141,8 @@ export function Header() {
               aria-label="Buscar estampa, jugador o equipo"
               className={cn(
                 'flex-1 min-w-0 bg-transparent border-0 outline-none',
-                'text-sm lg:text-[15px] font-medium text-crema',
-                'placeholder:text-crema/60',
+                'text-sm lg:text-[15px] font-medium text-crema uppercase tracking-wider',
+                'placeholder:text-crema/60 placeholder:tracking-wider',
               )}
             />
             {mostrar || valor.length > 0 ? (
