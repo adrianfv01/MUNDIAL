@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
 import { StickerCard } from '@/components/estampas/StickerCard'
+import { CODIGO_FWC, rangoAlbumEquipo } from '@/data/equipos'
 import type { Coleccion, Equipo, Estampa } from '@/lib/types'
 
 export type FiltroAlbum = 'todas' | 'faltantes' | 'repetidas'
@@ -27,7 +28,7 @@ interface GrupoMundial {
 }
 
 // Etiqueta especial para el bloque de FWC (estampas sin equipo).
-const GRUPO_FWC = 'FWC'
+const GRUPO_FWC = CODIGO_FWC
 
 export function VistaEstampasAlbum({
   equipos,
@@ -40,17 +41,6 @@ export function VistaEstampasAlbum({
   const equiposPorCodigo = useMemo(() => {
     const mapa: Record<string, Equipo> = {}
     for (const eq of equipos) mapa[eq.codigo] = eq
-    return mapa
-  }, [equipos])
-
-  // Mantenemos el orden original del album: el indice de cada equipo dentro
-  // del array `equipos` define la posicion dentro de su grupo (A: MEX, RSA,
-  // KOR, CZE; B: CAN, BIH, QAT, SUI; etc).
-  const ordenEquipo = useMemo(() => {
-    const mapa: Record<string, number> = {}
-    equipos.forEach((eq, idx) => {
-      mapa[eq.codigo] = idx
-    })
     return mapa
   }, [equipos])
 
@@ -81,20 +71,19 @@ export function VistaEstampasAlbum({
 
     const resultado: GrupoMundial[] = []
     for (const [grupo, equiposGrupo] of porGrupo) {
-      equiposGrupo.sort((a, b) => {
-        const ia = ordenEquipo[a.codigoEquipo] ?? Number.MAX_SAFE_INTEGER
-        const ib = ordenEquipo[b.codigoEquipo] ?? Number.MAX_SAFE_INTEGER
-        return ia - ib
-      })
+      equiposGrupo.sort(
+        (a, b) => rangoAlbumEquipo(a.codigoEquipo) - rangoAlbumEquipo(b.codigoEquipo),
+      )
       resultado.push({ grupo, equipos: equiposGrupo })
     }
 
+    // FWC va primero (paginas 1-7 del album), luego los grupos A-L.
     return resultado.sort((a, b) => {
-      if (a.grupo === GRUPO_FWC) return 1
-      if (b.grupo === GRUPO_FWC) return -1
+      if (a.grupo === GRUPO_FWC) return -1
+      if (b.grupo === GRUPO_FWC) return 1
       return a.grupo.localeCompare(b.grupo)
     })
-  }, [estampas, coleccion, filtro, equiposPorCodigo, ordenEquipo])
+  }, [estampas, coleccion, filtro, equiposPorCodigo])
 
   if (grupos.length === 0) {
     return (

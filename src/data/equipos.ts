@@ -1,4 +1,4 @@
-import type { Equipo } from '@/lib/types'
+import type { Equipo, Estampa } from '@/lib/types'
 
 // Las 48 selecciones del Mundial 2026 (USA / Canadá / México) tal como aparecen
 // en el álbum oficial Panini FIFA World Cup 2026 (lanzado el 29 de abril de 2026).
@@ -76,3 +76,57 @@ export const equipos: Equipo[] = [
   { codigo: 'GHA', nombre: 'Ghana', grupo: 'L', confederacion: 'CAF', colorPrimario: '#CE1126', colorSecundario: '#FCD116', bandera: 'GH', estado: 'clasificado' },
   { codigo: 'PAN', nombre: 'Panamá', grupo: 'L', confederacion: 'CONCACAF', colorPrimario: '#DA121A', colorSecundario: '#005AA7', bandera: 'PA', estado: 'clasificado' },
 ]
+
+// Codigo especial usado para las estampas FWC (Trofeo, mascotas, sedes y museo).
+// En el album oficial estas paginas van ANTES del Grupo A (paginas 1-7), por
+// eso le asignamos un rango menor que cualquier equipo para que siempre quede
+// al inicio de cualquier listado ordenado.
+export const CODIGO_FWC = 'FWC'
+
+// Mapa codigo -> indice en el album oficial. La fuente de verdad es el array
+// `equipos` de arriba: la posicion en ese array refleja el orden de paginas.
+// Asi cualquier consumidor (vistas, busqueda, intercambios, etc.) puede pedir
+// el orden del album sin depender de como llegue la data desde Firestore.
+export const ORDEN_ALBUM_EQUIPO: Record<string, number> = Object.freeze(
+  equipos.reduce<Record<string, number>>((acc, eq, idx) => {
+    acc[eq.codigo] = idx
+    return acc
+  }, {}),
+)
+
+/**
+ * Devuelve el rango (menor = aparece antes) que le corresponde a un codigo de
+ * equipo dentro del album. FWC siempre va primero. Equipos desconocidos quedan
+ * al final para no romper el orden si llega algun codigo nuevo.
+ */
+export function rangoAlbumEquipo(codigo: string): number {
+  if (codigo === CODIGO_FWC) return -1
+  const idx = ORDEN_ALBUM_EQUIPO[codigo]
+  return idx === undefined ? Number.MAX_SAFE_INTEGER : idx
+}
+
+/** Ordena una lista de equipos siguiendo el orden de paginas del album. */
+export function ordenarEquiposPorAlbum<T extends Pick<Equipo, 'codigo'>>(
+  lista: readonly T[],
+): T[] {
+  return [...lista].sort(
+    (a, b) => rangoAlbumEquipo(a.codigo) - rangoAlbumEquipo(b.codigo),
+  )
+}
+
+/**
+ * Ordena estampas como aparecen en el album: primero las FWC (en su `orden`
+ * interno), luego cada equipo en orden de paginas y, dentro del equipo, por
+ * `orden` (escudo, jugadores y plantel).
+ */
+export function ordenarEstampasPorAlbum<
+  T extends Pick<Estampa, 'equipoId' | 'orden' | 'numero'>,
+>(lista: readonly T[]): T[] {
+  return [...lista].sort((a, b) => {
+    const ra = rangoAlbumEquipo(a.equipoId)
+    const rb = rangoAlbumEquipo(b.equipoId)
+    if (ra !== rb) return ra - rb
+    if (a.orden !== b.orden) return a.orden - b.orden
+    return a.numero - b.numero
+  })
+}

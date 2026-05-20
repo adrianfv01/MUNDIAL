@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { equipos as equiposSeed } from '@/data/equipos'
+import {
+  equipos as equiposSeed,
+  ordenarEquiposPorAlbum,
+  ordenarEstampasPorAlbum,
+} from '@/data/equipos'
 import { catalogoCompleto } from '@/data/catalogoSeed'
 import { imagenesEstampas } from '@/data/imagenesEstampas'
 import type { Equipo, Estampa } from '@/lib/types'
@@ -16,6 +20,18 @@ function aplicarImagenesLocales(lista: Estampa[]): Estampa[] {
     if (e.imagen === ruta) return e
     return { ...e, imagen: ruta }
   })
+}
+
+// Firestore no garantiza el orden con `getDocs`, asi que normalizamos cualquier
+// lista que entre/salga de la cache para que coincida con el orden del album
+// oficial (FWC primero, luego Grupos A-L con los equipos en su pagina y, dentro
+// de cada equipo, escudo -> jugadores -> plantel).
+function normalizarEquipos(lista: Equipo[]): Equipo[] {
+  return ordenarEquiposPorAlbum(lista)
+}
+
+function normalizarEstampas(lista: Estampa[]): Estampa[] {
+  return ordenarEstampasPorAlbum(aplicarImagenesLocales(lista))
 }
 
 interface CatalogoData {
@@ -60,9 +76,9 @@ function guardarCachePersistido(data: CachePersistido) {
 
 if (typeof window !== 'undefined' && (!cacheEquipos || !cacheEstampas)) {
   const persistido = leerCachePersistido()
-  if (persistido?.equipos?.length) cacheEquipos = persistido.equipos
+  if (persistido?.equipos?.length) cacheEquipos = normalizarEquipos(persistido.equipos)
   if (persistido?.estampas?.length) {
-    cacheEstampas = aplicarImagenesLocales(persistido.estampas)
+    cacheEstampas = normalizarEstampas(persistido.estampas)
   }
 }
 
@@ -77,11 +93,13 @@ async function cargarCatalogoRemoto(): Promise<void> {
       let nuevoEquipos: Equipo[] | undefined
       let nuevoEstampas: Estampa[] | undefined
       if (!eqsSnap.empty) {
-        nuevoEquipos = eqsSnap.docs.map((d) => d.data() as Equipo)
+        nuevoEquipos = normalizarEquipos(
+          eqsSnap.docs.map((d) => d.data() as Equipo),
+        )
         cacheEquipos = nuevoEquipos
       }
       if (!catSnap.empty) {
-        nuevoEstampas = aplicarImagenesLocales(
+        nuevoEstampas = normalizarEstampas(
           catSnap.docs.map((d) => d.data() as Estampa),
         )
         cacheEstampas = nuevoEstampas

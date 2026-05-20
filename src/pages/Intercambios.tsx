@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useAmigos } from '@/hooks/useAmigos'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion, cargarColeccionUsuario } from '@/hooks/useColeccion'
+import { rangoAlbumEquipo } from '@/data/equipos'
 import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
@@ -1158,7 +1159,11 @@ function PanelLista({
       lista.push(e)
       mapa.set(e.equipoId, lista)
     }
-    return [...mapa.entries()].sort((a, b) => b[1].length - a[1].length)
+    // Respetamos el orden del album: FWC primero, luego Grupos A-L con los
+    // equipos en el orden en que aparecen sus paginas.
+    return [...mapa.entries()].sort(
+      ([codA], [codB]) => rangoAlbumEquipo(codA) - rangoAlbumEquipo(codB),
+    )
   }, [estampas])
 
   if (estampas.length === 0) {

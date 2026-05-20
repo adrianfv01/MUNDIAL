@@ -5,6 +5,7 @@ import { ArrowRight, Minus, Plus, Star } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useCatalogo } from '@/hooks/useCatalogo'
 import { useColeccion } from '@/hooks/useColeccion'
+import { rangoAlbumEquipo } from '@/data/equipos'
 import { normalizarTexto } from '@/lib/normalizar'
 import { cn } from '@/lib/utils'
 import { useTapNoScroll } from '@/lib/useTapNoScroll'
@@ -113,9 +114,9 @@ export function BuscarEstampas({ valor, onIrResultado }: BuscarEstampasProps) {
     }
 
     lista.sort((a, b) => {
-      if (a.estampa.equipoId !== b.estampa.equipoId) {
-        return a.estampa.equipoId.localeCompare(b.estampa.equipoId)
-      }
+      const ra = rangoAlbumEquipo(a.estampa.equipoId)
+      const rb = rangoAlbumEquipo(b.estampa.equipoId)
+      if (ra !== rb) return ra - rb
       return a.estampa.orden - b.estampa.orden
     })
 
